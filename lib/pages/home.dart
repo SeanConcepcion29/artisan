@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:artisan/services/firestore_user.dart';
 import 'package:artisan/services/firestore_project.dart';
+import 'package:artisan/components/shared_projects_card.dart';
+import 'package:artisan/components/project_card.dart';
+import 'package:artisan/components/guide_tab.dart';
 
 class HomePage extends StatefulWidget {
   final String userEmail;
@@ -17,6 +20,7 @@ class _HomePageState extends State<HomePage> {
 
   Map<String, dynamic>? userData;
   List<Map<String, dynamic>> userProjects = [];
+  List<Map<String, dynamic>> sharedProjects = [];
 
   bool isLoading = true;
   int _selectedIndex = 0; // Track selected tab
@@ -31,11 +35,16 @@ class _HomePageState extends State<HomePage> {
     final data = await firestoreUsers.getUserByEmail(widget.userEmail);
 
     if (data != null) {
-      final projects = await firestoreProjects.getAllProjectsByEmail(widget.userEmail);
+      final projects =
+          await firestoreProjects.getAllProjectsByEmail(widget.userEmail);
+
+      // Also fetch shared/public projects
+      final allShared = await firestoreProjects.getAllPublicProjects();
 
       setState(() {
         userData = data;
         userProjects = projects;
+        sharedProjects = allShared;
         isLoading = false;
       });
     } else {
@@ -45,8 +54,6 @@ class _HomePageState extends State<HomePage> {
       });
     }
   }
-
-
 
   void _onItemTapped(int index) async {
     setState(() {
@@ -77,8 +84,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -97,79 +102,59 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
+    // Pick which projects to show
+    final projectsToShow =
+        _selectedIndex == 0 ? userProjects : _selectedIndex == 1 ? sharedProjects : [];
+
     return Scaffold(
       backgroundColor: const Color(0xFF1E1F2A),
       body: SafeArea(
         child: Column(
           children: [
+            // Header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Icon(Icons.hexagon_outlined, color: Colors.white, size: 28),
+                children: const [
+                  Icon(Icons.hexagon_outlined, color: Colors.white, size: 28),
                   Text(
                     "ARTISAN",
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 20,
                       letterSpacing: 16,
                     ),
                   ),
-                  const Icon(Icons.person_outline, color: Colors.white, size: 28),
+                  Icon(Icons.person_outline, color: Colors.white, size: 28),
                 ],
               ),
             ),
-
             const SizedBox(height: 20),
 
+            // Main content per tab
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                itemCount: userProjects.length,
-                itemBuilder: (context, index) {
-                  final project = userProjects[index];
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
+              child: _selectedIndex == 2
+                  ? const GuidePage() // Guide Page
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      itemCount: projectsToShow.length,
+                      itemBuilder: (context, index) {
+                        final project = projectsToShow[index];
 
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.white, width: 2),
+                        // Shared page card
+                        if (_selectedIndex == 1) {
+                          return SharedProjectCard(project: project);
+                        }
+
+                        // Projects page card
+                        return ProjectCard(project: project);
+                      },
                     ),
-
-                    child: ListTile(
-                      title: Text(
-                        project['title'] ?? "Untitled Project",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-
-                      subtitle: Text(
-                        "Last Modified: ${project['datemodified'] != null
-                            ? "${project['datemodified'].toDate().day.toString().padLeft(2, '0')}/${project['datemodified'].toDate().month.toString().padLeft(2, '0')}/${project['datemodified'].toDate().year}"
-                            : 'N/A'}\n"
-                        "Date Created: ${project['datecreated'] != null
-                            ? "${project['datecreated'].toDate().day.toString().padLeft(2, '0')}/${project['datecreated'].toDate().month.toString().padLeft(2, '0')}/${project['datecreated'].toDate().year}"
-                            : 'N/A'}",
-                        style: const TextStyle(color: Colors.white70, fontSize: 12),
-                      ),
-
-                      
-                      trailing: const Icon(Icons.person_outline, color: Colors.white),
-                    ),
-                  );
-                },
-              ),
             ),
-
-
           ],
         ),
       ),
-
-
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: const Color(0xFF1E1F2A),
         selectedItemColor: Colors.purpleAccent,
@@ -196,9 +181,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-
-
     );
   }
 }
-

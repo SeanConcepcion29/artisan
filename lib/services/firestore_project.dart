@@ -33,11 +33,23 @@ class FirestoreProjects {
     });
   }
 
-  // GET ALL PROJECTS
+  // GET ALL PROJECTS BY EMAIL
   Future<List<Map<String, dynamic>>> getAllProjectsByEmail(String email) async {
-    final querySnapshot = await projectsCollection
-        .where('email', isEqualTo: email)
-        .get();
+    final querySnapshot =
+        await projectsCollection.where('email', isEqualTo: email).get();
+
+    return querySnapshot.docs
+        .map((doc) => {
+              'id': doc.id,
+              ...doc.data() as Map<String, dynamic>,
+            })
+        .toList();
+  }
+
+  // 🚀 GET ALL PUBLIC PROJECTS
+  Future<List<Map<String, dynamic>>> getAllPublicProjects() async {
+    final querySnapshot =
+        await projectsCollection.where('public', isEqualTo: true).get();
 
     return querySnapshot.docs
         .map((doc) => {

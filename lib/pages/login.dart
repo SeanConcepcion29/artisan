@@ -6,7 +6,6 @@ import 'package:artisan/pages/signup.dart';
 
 import 'package:artisan/services/firestore_user.dart';
 
-
 class LogInPage extends StatefulWidget {
   @override
   State<LogInPage> createState() => _LogInState();
@@ -15,8 +14,6 @@ class LogInPage extends StatefulWidget {
 class _LogInState extends State<LogInPage> {
   final firestoreUsers = FirestoreUsers();
 
-
-
   final TextEditingController emailController = TextEditingController(
     text: kDebugMode ? 'sean@gmail.com' : '',
   );
@@ -24,7 +21,6 @@ class _LogInState extends State<LogInPage> {
   final TextEditingController passwordController = TextEditingController(
     text: kDebugMode ? '123' : '',
   );
-
 
   String? errorMessage; // store error text here
 
@@ -47,9 +43,14 @@ class _LogInState extends State<LogInPage> {
       final user = await firestoreUsers.getUserByEmail(email);
 
       if (user != null && user['password'] == password) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomePage(userEmail: email)));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage(userEmail: email)),
+        );
       } else {
-        setState(() { errorMessage = 'Invalid email or password'; });
+        setState(() {
+          errorMessage = 'Invalid email or password';
+        });
       }
     } catch (e) {
       setState(() {
@@ -60,10 +61,13 @@ class _LogInState extends State<LogInPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Get screen height
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 34, 36, 49),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 30.0),
+        padding: const EdgeInsets.symmetric(horizontal: 2.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -87,7 +91,8 @@ class _LogInState extends State<LogInPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 200),
+
+            SizedBox(height: screenHeight * 0.25), // 25% of screen height
 
             SizedBox(
               width: 320,
@@ -173,7 +178,8 @@ class _LogInState extends State<LogInPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 300),
+
+            SizedBox(height: screenHeight * 0.25), // 15% of screen height
 
             // Sign up text
             Row(
@@ -200,7 +206,6 @@ class _LogInState extends State<LogInPage> {
                 ),
               ],
             )
-
           ],
         ),
       ),
