@@ -43,7 +43,7 @@ class _SignUpPageState extends State<SignUpPage> {
         password: password,
       );
 
-      Navigator.pushReplacement(
+      Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => HomePage(userEmail: email)),
       );
@@ -64,15 +64,19 @@ class _SignUpPageState extends State<SignUpPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              "Welcome, New User!",
-              style: TextStyle(
-                fontSize: 26,
-                letterSpacing: 3,
-                color: Colors.white,
-                fontFamily: 'Inter',
+            Align(
+              alignment: Alignment.centerLeft,
+              child: const Text(
+                "Welcome,\nNew User!",
+                style: TextStyle(
+                  fontSize: 26,
+                  letterSpacing: 4,
+                  color: Colors.white,
+                  fontFamily: 'Inter',
+                ),
               ),
             ),
+
             const SizedBox(height: 100),
 
             // Name

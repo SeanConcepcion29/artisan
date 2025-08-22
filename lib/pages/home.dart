@@ -1,9 +1,15 @@
+import 'package:artisan/components/notif_card.dart';
+import 'package:artisan/pages/profile.dart';
+import 'package:artisan/pages/project_workspace.dart';
+import 'package:artisan/services/firestore_notif.dart';
 import 'package:flutter/material.dart';
 import 'package:artisan/services/firestore_user.dart';
 import 'package:artisan/services/firestore_project.dart';
 import 'package:artisan/components/shared_projects_card.dart';
 import 'package:artisan/components/project_card.dart';
 import 'package:artisan/components/guide_tab.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class HomePage extends StatefulWidget {
   final String userEmail;
@@ -17,10 +23,14 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final firestoreUsers = FirestoreUsers();
   final firestoreProjects = FirestoreProjects();
+  final firestoreNotifications = FirestoreNotifications();
+
 
   Map<String, dynamic>? userData;
   List<Map<String, dynamic>> userProjects = [];
   List<Map<String, dynamic>> sharedProjects = [];
+  List<Map<String, dynamic>> userNotifications = [];
+
 
   bool isLoading = true;
   int _selectedIndex = 0; // Track selected tab
@@ -38,13 +48,17 @@ class _HomePageState extends State<HomePage> {
       final projects =
           await firestoreProjects.getAllProjectsByEmail(widget.userEmail);
 
-      // Also fetch shared/public projects
       final allShared = await firestoreProjects.getAllPublicProjects();
+
+      // ✅ Fetch notifications from Firestore collection
+      final notifications =
+          await firestoreNotifications.getNotificationsByEmail(widget.userEmail);
 
       setState(() {
         userData = data;
         userProjects = projects;
         sharedProjects = allShared;
+        userNotifications = notifications; // not from user doc
         isLoading = false;
       });
     } else {
@@ -55,33 +69,12 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+
+
   void _onItemTapped(int index) async {
     setState(() {
       _selectedIndex = index;
     });
-
-    if (index == 3) {
-      // Generate a dummy project ID
-      final dummyId = DateTime.now().millisecondsSinceEpoch.toString();
-
-      // Create a dummy project in Firestore
-      await firestoreProjects.createProject(
-        email: widget.userEmail,
-        owner: userData?['firstname'] ?? 'Unknown Owner',
-        projectId: dummyId,
-        title: 'Dummy Project $dummyId',
-        dateCreated: DateTime.now(),
-        dateModified: DateTime.now(),
-        public: true,
-        solo: true,
-        collabs: [],
-        downloads: 0,
-        likes: 0,
-      );
-
-      // Refresh project list
-      await fetchUserAndProjects();
-    }
   }
 
   @override
@@ -111,14 +104,23 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: Column(
           children: [
+
             // Header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Icon(Icons.hexagon_outlined, color: Colors.white, size: 28),
-                  Text(
+                children: [
+                  // Left icon clickable
+                  InkWell(
+                    onTap: () {
+                      print("Left icon clicked");
+                    },
+                    child: const Icon(Icons.hexagon_outlined, color: Colors.white, size: 28),
+                  ),
+
+                  // Title
+                  const Text(
                     "ARTISAN",
                     style: TextStyle(
                       color: Colors.white,
@@ -126,32 +128,104 @@ class _HomePageState extends State<HomePage> {
                       letterSpacing: 16,
                     ),
                   ),
-                  Icon(Icons.person_outline, color: Colors.white, size: 28),
+
+                  // Right icon clickable
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ProfilePage(userData: userData!),
+                        ),
+                      );
+                    },
+                    child: const Icon(Icons.account_circle_outlined, color: Colors.white, size: 28),
+                  ),
+
                 ],
               ),
             ),
+
+            
             const SizedBox(height: 20),
 
             // Main content per tab
             Expanded(
               child: _selectedIndex == 2
-                  ? const GuidePage() // Guide Page
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      itemCount: projectsToShow.length,
-                      itemBuilder: (context, index) {
-                        final project = projectsToShow[index];
+                  ? const GuidePage()
+                  : _selectedIndex == 3
+                      // ✅ Live Notifications tab
+                      ? StreamBuilder<QuerySnapshot>(
+                          stream: firestoreNotifications.notifications
+                              .where('email', isEqualTo: widget.userEmail)
+                              .orderBy('date', descending: true)
+                              .snapshots(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return const Center(
+                                  child: CircularProgressIndicator(color: Colors.white));
+                            }
+                            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                              return const Center(
+                                child: Text("No notifications",
+                                    style: TextStyle(color: Colors.white70)),
+                              );
+                            }
 
-                        // Shared page card
-                        if (_selectedIndex == 1) {
-                          return SharedProjectCard(project: project);
-                        }
+                            final notifs = snapshot.data!.docs.map((doc) {
+                              final data = doc.data() as Map<String, dynamic>;
+                              return {
+                                "email": data['email'] ?? "Unknown",
+                                "message": data['message'] ?? "",
+                                "opened": data['opened'] ?? false,
+                                "date": (data['date'] as Timestamp).toDate(),
+                              };
+                            }).toList();
 
-                        // Projects page card
-                        return ProjectCard(project: project);
-                      },
-                    ),
+                            return ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                              itemCount: notifs.length,
+                              itemBuilder: (context, index) {
+                                final notif = notifs[index];
+                                return NotificationCard(
+                                  email: notif['email'],
+                                  message: notif['message'],
+                                  opened: notif['opened'],
+                                  date: notif['date'],
+                                );
+                              },
+                            );
+                          },
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          itemCount: projectsToShow.length,
+                          itemBuilder: (context, index) {
+                            final project = projectsToShow[index];
+                            final projectName = project['title'] ?? "Untitled Project";
+
+                            return InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ProjectWorkspacePage(projectName: projectName),
+                                  ),
+                                );
+                              },
+                              child: _selectedIndex == 1
+                                  ? SharedProjectCard(
+                                      projectId: project['id'],   // 👈 make sure `id` exists in project map
+                                      userEmail: userData!['email'],
+                                      project: project,
+                                    )
+                                  : ProjectCard(project: project),
+                            );
+                          },
+                        ),
             ),
+
+
           ],
         ),
       ),

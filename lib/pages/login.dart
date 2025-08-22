@@ -5,6 +5,7 @@ import 'package:artisan/pages/home.dart';
 import 'package:artisan/pages/signup.dart';
 
 import 'package:artisan/services/firestore_user.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class LogInPage extends StatefulWidget {
   @override
@@ -15,11 +16,11 @@ class _LogInState extends State<LogInPage> {
   final firestoreUsers = FirestoreUsers();
 
   final TextEditingController emailController = TextEditingController(
-    text: kDebugMode ? 'sean@gmail.com' : '',
+    text: 'lbj@gmail.com',
   );
 
   final TextEditingController passwordController = TextEditingController(
-    text: kDebugMode ? '123' : '',
+    text: '123',
   );
 
   String? errorMessage; // store error text here
@@ -43,7 +44,7 @@ class _LogInState extends State<LogInPage> {
       final user = await firestoreUsers.getUserByEmail(email);
 
       if (user != null && user['password'] == password) {
-        Navigator.pushReplacement(
+        Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => HomePage(userEmail: email)),
         );
@@ -61,41 +62,41 @@ class _LogInState extends State<LogInPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Get screen height
-    final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 34, 36, 49),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Logo + title
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  '../../images/logo.png',
-                  height: 90,
-                ),
-                const SizedBox(width: 20),
-                const Text(
-                  "ARTISAN",
-                  style: TextStyle(
-                    fontSize: 26,
-                    letterSpacing: 12,
-                    color: Colors.white,
-                    fontFamily: 'Inter',
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Column(
+            children: [
+              // Top: Logo
+              const SizedBox(height: 80),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SvgPicture.asset(
+                    'assets/images/logo.svg',
+                    height: 70,
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 20),
+                  const Text(
+                    "ARTISAN",
+                    style: TextStyle(
+                      fontSize: 26,
+                      letterSpacing: 12,
+                      color: Colors.white,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                ],
+              ),
 
-            SizedBox(height: screenHeight * 0.25), // 25% of screen height
+              const Spacer(), // <-- pushes content down proportionally
 
+              // Middle: Login form
             SizedBox(
-              width: 320,
+              width: 300,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -167,9 +168,7 @@ class _LogInState extends State<LogInPage> {
                           onPressed: _handleLogin,
                           child: const Text(
                             "LOGIN",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: TextStyle( fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -179,36 +178,39 @@ class _LogInState extends State<LogInPage> {
               ),
             ),
 
-            SizedBox(height: screenHeight * 0.25), // 15% of screen height
+              const Spacer(), // <-- pushes Sign Up link to bottom
 
-            // Sign up text
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  "First-time User? ",
-                  style: TextStyle(color: Colors.white70),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => SignUpPage()),
-                    );
-                  },
-                  child: const Text(
-                    "Sign Up",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+              // Bottom: Sign up text
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    "First-time User? ",
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => SignUpPage()),
+                      );
+                    },
+                    child: const Text(
+                      "Sign Up",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            )
-          ],
+                ],
+              ),
+              const SizedBox(height: 50),
+            ],
+          ),
         ),
       ),
     );
+
   }
 }

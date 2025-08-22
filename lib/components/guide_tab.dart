@@ -12,35 +12,144 @@ class GuidePage extends StatelessWidget {
         child: ListView(
           children: [
             // FAQ Section
-            _buildSection("Frequently Asked Questions", []),
+            _buildSection("Frequently Asked Questions", [
+              {
+                "title": "What is Cisco Packet Tracer?",
+                "desc":
+                    "A powerful network simulation tool used to design, configure, and troubleshoot networks."
+              },
+              {
+                "title": "Is Packet Tracer free?",
+                "desc":
+                    "Yes. It is free for Cisco Networking Academy students and available for download after registration."
+              },
+              {
+                "title": "Can Packet Tracer replace real hardware?",
+                "desc":
+                    "No. It is mainly for learning and practice, not a full replacement for physical devices."
+              },
+            ]),
 
             // Network Devices Section
             _buildSection("Network Devices", [
               {
                 "title": "Hubs",
-                "desc": "Broadcast data it receives to all devices.",
+                "desc": "Broadcast data it receives to all connected devices."
               },
               {
                 "title": "Routers",
-                "desc": "Forwards data packets based on IP addresses.",
+                "desc": "Forward data packets between different networks based on IP addresses."
               },
               {
                 "title": "Switches",
-                "desc": "Sends data directly to specific devices.",
+                "desc": "Send data directly to the specific device (based on MAC addresses)."
+              },
+              {
+                "title": "Wireless Router",
+                "desc": "Provides Wi-Fi connectivity and routing functions for devices."
+              },
+              {
+                "title": "Access Points",
+                "desc":
+                    "Extends wireless coverage, connecting devices to a wired network."
               },
             ]),
 
             // End Devices
-            _buildSection("End Devices", []),
+            _buildSection("End Devices", [
+              {
+                "title": "PCs",
+                "desc": "General end-user computers used to test and configure networks."
+              },
+              {
+                "title": "Laptops",
+                "desc": "Portable end devices for network testing and simulation."
+              },
+              {
+                "title": "Servers",
+                "desc":
+                    "Provide services like DHCP, DNS, HTTP, Email, or FTP in simulations."
+              },
+              {
+                "title": "Smartphones/Tablets",
+                "desc": "Used to simulate mobile clients in a network."
+              },
+              {
+                "title": "Printers",
+                "desc": "Can be network-connected to simulate shared resources."
+              },
+            ]),
 
             // Connections
-            _buildSection("Connections", []),
+            _buildSection("Connections", [
+              {
+                "title": "Copper Straight-Through",
+                "desc": "Used to connect different devices (PC to Switch, Router to Switch)."
+              },
+              {
+                "title": "Copper Cross-Over",
+                "desc": "Used to connect similar devices (PC to PC, Switch to Switch)."
+              },
+              {
+                "title": "Fiber Optic",
+                "desc": "High-speed connections for switches, routers, and servers."
+              },
+              {
+                "title": "Console Cable",
+                "desc": "Used to configure routers and switches via CLI."
+              },
+              {
+                "title": "Wireless",
+                "desc": "Used to connect Wi-Fi enabled devices to access points or routers."
+              },
+            ]),
 
             // Types of View
-            _buildSection("Types of View", []),
+            _buildSection("Types of View", [
+              {
+                "title": "Logical View",
+                "desc": "Shows devices, connections, and topology at the network level."
+              },
+              {
+                "title": "Physical View",
+                "desc":
+                    "Represents racks, rooms, and the physical placement of devices."
+              },
+              {
+                "title": "Realtime Mode",
+                "desc":
+                    "Displays live packet movement and simulates real-time operations."
+              },
+              {
+                "title": "Simulation Mode",
+                "desc":
+                    "Lets you pause, replay, and analyze packet flow step-by-step."
+              },
+            ]),
 
             // Tool Bar
-            _buildSection("Tool Bar", []),
+            _buildSection("Tool Bar", [
+              {
+                "title": "Select Tool",
+                "desc": "Used to select and move devices."
+              },
+              {
+                "title": "Delete Tool",
+                "desc": "Removes devices or connections from the workspace."
+              },
+              {
+                "title": "Inspect Tool",
+                "desc": "Opens a device to configure settings (CLI or GUI)."
+              },
+              {
+                "title": "Add Simple PDU",
+                "desc": "Used to test connectivity (like a simple ping)."
+              },
+              {
+                "title": "Add Complex PDU",
+                "desc": "Creates custom traffic flows to test advanced configurations."
+              },
+            ]),
           ],
         ),
       ),

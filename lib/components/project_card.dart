@@ -39,7 +39,13 @@ class ProjectCard extends StatelessWidget {
                 ),
               ),
 
-              const Icon(Icons.person_outline, color: Colors.white70, size: 20),
+              Icon(
+                project['solo'] == true 
+                    ? Icons.person_outline 
+                    : Icons.group_outlined,
+                color: Colors.white70,
+                size: 20,
+              ),
             ],
           ),
         ],
