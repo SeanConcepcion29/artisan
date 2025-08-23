@@ -8,7 +8,7 @@ class GuidePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF1E1F2A), // Dark background
       body: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
         child: ListView(
           children: [
             // FAQ Section
