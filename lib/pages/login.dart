@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 
 import 'package:artisan/pages/home.dart';
 import 'package:artisan/pages/signup.dart';
@@ -23,14 +22,14 @@ class _LogInState extends State<LogInPage> {
     text: '123',
   );
 
-  String? errorMessage; // store error text here
+  String? errorMessage; 
 
   void _handleLogin() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
     setState(() {
-      errorMessage = null; // clear old errors
+      errorMessage = null; 
     });
 
     if (email.isEmpty || password.isEmpty) {
@@ -60,6 +59,7 @@ class _LogInState extends State<LogInPage> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
 
@@ -70,7 +70,6 @@ class _LogInState extends State<LogInPage> {
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Column(
             children: [
-              // Top: Logo
               const SizedBox(height: 80),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -92,9 +91,8 @@ class _LogInState extends State<LogInPage> {
                 ],
               ),
 
-              const Spacer(), // <-- pushes content down proportionally
-
-              // Middle: Login form
+              const Spacer(), 
+              
             SizedBox(
               width: 300,
               child: Column(

@@ -11,6 +11,7 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
+
 class _ProfilePageState extends State<ProfilePage> {
   final firestoreUsers = FirestoreUsers();
 
@@ -20,26 +21,25 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    firstNameController =
-        TextEditingController(text: widget.userData['firstname']);
-    lastNameController =
-        TextEditingController(text: widget.userData['lastname']);
+    firstNameController = TextEditingController(text: widget.userData['firstname']);
+    lastNameController = TextEditingController(text: widget.userData['lastname']);
   }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF232531), // dark background
+      backgroundColor: const Color(0xFF232531), 
       body: SafeArea(
         child: Center(
-          child: SingleChildScrollView( // makes sure it won’t overflow on smaller screens
+          child: SingleChildScrollView( 
             child: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center, // center vertically
                 crossAxisAlignment: CrossAxisAlignment.center, // center horizontally
                 children: [
-                  // Profile Icon
+     
                   const Icon(
                     Icons.account_circle_outlined,
                     color: Colors.white,
@@ -48,11 +48,11 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   const SizedBox(height: 10),
 
-                  // First & Last name display
                   Text(
                     "${widget.userData['firstname']} ${widget.userData['lastname']}",
                     style: const TextStyle(color: Colors.white, fontSize: 28),
                   ),
+
                   Text(
                     "${widget.userData['email']}",
                     style: const TextStyle(color: Colors.white, fontSize: 18),
@@ -60,7 +60,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   const SizedBox(height: 40),
 
-                  // First name input
+
                   TextField(
                     controller: firstNameController,
                     style: const TextStyle(color: Colors.white),
@@ -78,7 +78,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   const SizedBox(height: 12),
 
-                  // Last name input
+
                   TextField(
                     controller: lastNameController,
                     style: const TextStyle(color: Colors.white),
@@ -96,7 +96,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   const SizedBox(height: 24),
 
-                  // Change name button
+
+
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -117,8 +118,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           const SnackBar(content: Text("Name updated! Changes will appear on restart.")),
                         );
                       },
-                      child: const Text("CHANGE NAME",
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text("CHANGE NAME", style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
 
@@ -138,14 +138,13 @@ class _ProfilePageState extends State<ProfilePage> {
                       onPressed: () {
                         Navigator.pop(context); // go back
                       },
-                      child: const Text("BACK",
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text("BACK", style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
 
                   const SizedBox(height: 48),
 
-                  // Delete account button
+
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -169,8 +168,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           const SnackBar(content: Text("Account deleted")),
                         );
                       },
-                      child: const Text("DELETE ACCOUNT",
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text("DELETE ACCOUNT", style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],

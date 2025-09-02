@@ -1,6 +1,4 @@
 import 'package:artisan/devices/pc_device.dart';
-import 'package:artisan/devices/router_device.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -19,7 +17,7 @@ class ProjectWorkspacePage extends StatefulWidget {
 class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
   bool _isExpanded = false;
   String? _selectedCategory; 
-  String? _selectedToolbar = "Select Tool";
+  String? _selectedToolbar;
   List<DroppedItem> droppedItems = [];
 
 
@@ -55,26 +53,19 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
 
-                  InkWell(
-                    onTap: () {
-                      Navigator.pop(context); // 👈 Go back
-                    },
-                    child: Row(
-                      children: [
-                        SvgPicture.asset('assets/images/logo.svg', height: 30),
-                        const SizedBox(width: 8),
-                        Text(
-                          widget.projectName,
-                          style: const TextStyle(
+                  Row(
+                    children: [
+                      SvgPicture.asset('assets/images/logo.svg', height: 30),
+                      const SizedBox(width: 8),
+                      Text(
+                        widget.projectName,
+                        style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ],
                   ),
-
 
                   Row(
                     children: [
@@ -184,9 +175,9 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                                         builder: (ctx) => PCConfigDialog(
                                           pc: item.pcConfig ??
                                               PCDevice(
-                                                name: "PC", 
+                                                name: "PC", // ✅ added default name
                                                 ipAddress: "0.0.0.0",
-                                                subnetMask: "255.255.255.0", 
+                                                subnetMask: "255.255.255.0", // ✅ default mask
                                                 defaultGateway: "0.0.0.0",
                                               ),
                                           onSave: (pc) => Navigator.pop(ctx, pc),
@@ -195,31 +186,13 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
 
                                       if (updatedPC != null) {
                                         setState(() {
-                                          droppedItems[index] = droppedItems[index].copyWith(pcConfig: updatedPC);
+                                          droppedItems[index] =
+                                              droppedItems[index].copyWith(pcConfig: updatedPC);
                                         });
                                       }
-                                    }
+}
 
-                                    else if (_selectedToolbar == "Inspect Tool" && item.label.contains("Router")) {
-                                      final updatedRouter = await showDialog<RouterDevice>(
-                                        context: context,
-                                        builder: (ctx) => RouterConfigDialog(
-                                          router: item.routerConfig ??
-                                            RouterDevice(
-                                              name: "Router"
-                                            ),
-                                          onSave: (router) => Navigator.pop(ctx, router),
-                                        ),
-                                      );
-
-                                      if (updatedRouter != null) {
-                                        setState(() {
-                                          droppedItems[index] = droppedItems[index].copyWith(routerConfig: updatedRouter);
-                                        });
-                                      }
-                                    }
                                   },
-
 
                                   child: _selectedToolbar == "Select Tool"
                                       ? Draggable<_DragPayload>(
@@ -320,7 +293,6 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                                         runSpacing: 16,
                                         children: [
                                           _deviceItem(Icons.dns, "Switch"),
-                                          _deviceItem(Icons.router, "Router"),
                                         ],
                                       ),
 
@@ -482,7 +454,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
         color: isDragging
             ? const Color.fromARGB(160, 55, 55, 55)
             : const Color.fromARGB(255, 55, 55, 55),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -490,21 +462,17 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
           Icon(item.icon, color: Colors.white, size: 48),
           const SizedBox(height: 4),
           Text(item.label, style: const TextStyle(color: Colors.white, fontSize: 12)),
-
           if (item.label == "PC" && item.pcConfig != null) ...[
             const SizedBox(height: 4),
-            Text(item.pcConfig!.name, style: const TextStyle(color: Colors.greenAccent, fontSize: 10)),
+            Text(item.pcConfig!.ipAddress,
+                style: const TextStyle(color: Colors.greenAccent, fontSize: 10)),
           ],
-
-          if (item.label.contains("Router") && item.routerConfig != null) ...[
-            const SizedBox(height: 4),
-            Text(item.routerConfig!.name, style: const TextStyle(color: Colors.greenAccent, fontSize: 10)),
-          ],
-
         ],
       ),
     );
   }
+
+
 
 }
 
@@ -520,8 +488,6 @@ class DroppedItem {
 
   // New optional config for PC
   final PCDevice? pcConfig;
-  final RouterDevice? routerConfig;
-  
 
   DroppedItem({
     required this.label,
@@ -529,7 +495,6 @@ class DroppedItem {
     required this.dx,
     required this.dy,
     this.pcConfig,
-    this.routerConfig,
   });
 
   IconData get icon => IconData(iconCodePoint, fontFamily: 'MaterialIcons');
@@ -540,7 +505,6 @@ class DroppedItem {
     double? dx,
     double? dy,
     PCDevice? pcConfig,
-    RouterDevice? routerConfig,
   }) {
     return DroppedItem(
       label: label ?? this.label,
@@ -548,8 +512,6 @@ class DroppedItem {
       dx: dx ?? this.dx,
       dy: dy ?? this.dy,
       pcConfig: pcConfig ?? this.pcConfig,
-      routerConfig: routerConfig ?? this.routerConfig,
-      
     );
   }
 
@@ -559,8 +521,7 @@ class DroppedItem {
       'iconCodePoint': iconCodePoint,
       'dx': dx,
       'dy': dy,
-      'pcConfig': pcConfig?.toMap(),
-      'routerConfig': routerConfig?.toMap(),
+      'pcConfig': pcConfig?.toMap(), // ✅ Save config
     };
   }
 
@@ -571,7 +532,6 @@ class DroppedItem {
       dx: (map['dx'] as num).toDouble(),
       dy: (map['dy'] as num).toDouble(),
       pcConfig: map['pcConfig'] != null ? PCDevice.fromMap(map['pcConfig']) : null,
-      routerConfig: map['routerConfig'] != null ? RouterDevice.fromMap(map['routerConfig']) : null,
     );
   }
 }

@@ -25,7 +25,6 @@ class _HomePageState extends State<HomePage> {
   final firestoreProjects = FirestoreProjects();
   final firestoreNotifications = FirestoreNotifications();
 
-
   Map<String, dynamic>? userData;
   List<Map<String, dynamic>> userProjects = [];
   List<Map<String, dynamic>> sharedProjects = [];
@@ -33,7 +32,7 @@ class _HomePageState extends State<HomePage> {
 
 
   bool isLoading = true;
-  int _selectedIndex = 0; // Track selected tab
+  int _selectedIndex = 0; 
 
   @override
   void initState() {
@@ -41,24 +40,20 @@ class _HomePageState extends State<HomePage> {
     fetchUserAndProjects();
   }
 
+
   Future<void> fetchUserAndProjects() async {
     final data = await firestoreUsers.getUserByEmail(widget.userEmail);
 
     if (data != null) {
-      final projects =
-          await firestoreProjects.getAllProjectsByEmail(widget.userEmail);
-
+      final projects = await firestoreProjects.getAllProjectsByEmail(widget.userEmail);
       final allShared = await firestoreProjects.getAllPublicProjects();
-
-      // ✅ Fetch notifications from Firestore collection
-      final notifications =
-          await firestoreNotifications.getNotificationsByEmail(widget.userEmail);
+      final notifications = await firestoreNotifications.getNotificationsByEmail(widget.userEmail);
 
       setState(() {
         userData = data;
         userProjects = projects;
         sharedProjects = allShared;
-        userNotifications = notifications; // not from user doc
+        userNotifications = notifications; 
         isLoading = false;
       });
     } else {
@@ -70,12 +65,12 @@ class _HomePageState extends State<HomePage> {
   }
 
 
-
   void _onItemTapped(int index) async {
     setState(() {
       _selectedIndex = index;
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +90,6 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    // Pick which projects to show
     final projectsToShow =
         _selectedIndex == 0 ? userProjects : _selectedIndex == 1 ? sharedProjects : [];
 
@@ -105,13 +99,13 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           children: [
 
-            // Header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Left icon clickable
+
+
                   InkWell(
                     onTap: () {
                       print("Left icon clicked");
@@ -119,7 +113,7 @@ class _HomePageState extends State<HomePage> {
                     child: const Icon(Icons.hexagon_outlined, color: Colors.white, size: 28),
                   ),
 
-                  // Title
+
                   const Text(
                     "ARTISAN",
                     style: TextStyle(
@@ -129,7 +123,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
 
-                  // Right icon clickable
+
                   GestureDetector(
                     onTap: () {
                       Navigator.push(
@@ -142,6 +136,7 @@ class _HomePageState extends State<HomePage> {
                     child: const Icon(Icons.account_circle_outlined, color: Colors.white, size: 28),
                   ),
 
+
                 ],
               ),
             ),
@@ -149,12 +144,11 @@ class _HomePageState extends State<HomePage> {
             
             const SizedBox(height: 20),
 
-            // Main content per tab
+
             Expanded(
               child: _selectedIndex == 2
                   ? const GuidePage()
                   : _selectedIndex == 3
-                      // ✅ Live Notifications tab
                       ? StreamBuilder<QuerySnapshot>(
                           stream: firestoreNotifications.notifications
                               .where('email', isEqualTo: widget.userEmail)
