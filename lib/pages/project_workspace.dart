@@ -57,7 +57,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
 
                   InkWell(
                     onTap: () {
-                      Navigator.pop(context); // 👈 Go back
+                      Navigator.pop(context); 
                     },
                     child: Row(
                       children: [
@@ -159,8 +159,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                         return Stack(
                           children: [
                             const Center(
-                              child: Text("Workspace Area",
-                                  style: TextStyle(color: Colors.black54)),
+                              child: Text("Workspace Area",style: TextStyle(color: Colors.black54)),
                             ),
                             ...droppedItems.asMap().entries.map((entry) {
                               final index = entry.key;
@@ -169,8 +168,6 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                               return Positioned(
                                 left: item.dx,
                                 top: item.dy,
-
-
 
                                 child: GestureDetector(
                                   onTap: () async {
@@ -424,7 +421,6 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
   }
 
 
-
   Widget _deviceItem(IconData icon, String label) {
     final bool isSelected = _selectedCategory == label;
 
@@ -455,7 +451,6 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
   }
 
 
-
   Widget _subOption(IconData icon, String name) {
     return Draggable<_DragPayload>(
       data: _DragPayload.newItem(icon, name),
@@ -474,14 +469,11 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
   }
 
 
-
   Widget _workspaceItem(DroppedItem item, {bool isDragging = false}) {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: isDragging
-            ? const Color.fromARGB(160, 55, 55, 55)
-            : const Color.fromARGB(255, 55, 55, 55),
+        color: isDragging ? const Color.fromARGB(160, 55, 55, 55) : const Color.fromARGB(255, 55, 55, 55),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -506,11 +498,16 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
     );
   }
 
+
 }
 
-/// ----------------
-/// Data structures
-/// ----------------
+
+
+
+
+/// --------------------------------
+/// DRAGGABLES
+/// --------------------------------
 
 class DroppedItem {
   final String label;
@@ -518,10 +515,8 @@ class DroppedItem {
   final double dx;
   final double dy;
 
-  // New optional config for PC
   final PCDevice? pcConfig;
   final RouterDevice? routerConfig;
-  
 
   DroppedItem({
     required this.label,
@@ -548,8 +543,7 @@ class DroppedItem {
       dx: dx ?? this.dx,
       dy: dy ?? this.dy,
       pcConfig: pcConfig ?? this.pcConfig,
-      routerConfig: routerConfig ?? this.routerConfig,
-      
+      routerConfig: routerConfig ?? this.routerConfig,  
     );
   }
 
@@ -576,9 +570,6 @@ class DroppedItem {
   }
 }
 
-
-
-
 class _DragPayload {
   final bool isNew;
   final IconData? icon;
@@ -598,12 +589,18 @@ class _DragPayload {
 
 
 
+
+/// --------------------------------
+/// SAVING AND LOADING
+/// --------------------------------
+
 Future<void> saveWorkspace(String projectName, List<DroppedItem> items) async {
   final ref = FirebaseFirestore.instance.collection('workspaces').doc(projectName);
   await ref.set({
     'items': items.map((e) => e.toMap()).toList(),
   });
 }
+
 
 Future<List<DroppedItem>> loadWorkspace(String projectName) async {
   final ref = FirebaseFirestore.instance.collection('workspaces').doc(projectName);

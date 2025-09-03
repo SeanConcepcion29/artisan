@@ -51,6 +51,7 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
 
   bool showConfig = false;
   bool showPing = false;
+  bool showConnections = false;
 
   @override
   void initState() {
@@ -77,45 +78,94 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("PC Options"),
+      title: const Text("PC Options", style: TextStyle(fontWeight: FontWeight.bold)),
       content: SizedBox(
         width: 350,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!showConfig && !showPing) ...[
-              ElevatedButton(
-                onPressed: () => setState(() {
-                  showConfig = true;
-                }),
-                child: const Text("Configure"),
+
+
+            if (!showConfig && !showPing && !showConnections) ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => setState(() {
+                    showConfig = true;
+                  }),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 34, 36, 49), 
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8), 
+                    ),
+                  ),
+                  child: const Text(
+                    "Configure",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
               ),
               const SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: () => setState(() {
-                  showPing = true;
-                }),
-                child: const Text("Ping"),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => setState(() {
+                    showPing = true;
+                  }),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 34, 36, 49), 
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8), // Make button rounded
+                    ),
+                  ),
+                  child: const Text(
+                    "Ping",
+                    style: TextStyle(color: Colors.white), // Change font color
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => setState(() {
+                    showConnections = true;
+                  }),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 34, 36, 49), 
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8), // Make button rounded
+                    ),
+                  ),
+                  child: const Text(
+                    "Connections",
+                    style: TextStyle(color: Colors.white), 
+                  ),
+                ),
               ),
             ],
+
+
             if (showConfig) _buildConfigForm(),
             if (showPing) _buildPingUI(),
+            if (showConnections) _buildConnectionsUI(),
           ],
         ),
       ),
       actions: [
-        if (showConfig || showPing)
+        if (showConfig || showPing || showConnections)
           TextButton(
             onPressed: () => setState(() {
               showConfig = false;
               showPing = false;
+              showConnections = false;
             }),
-            child: const Text("Back"),
+            child: const Text("Back", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
           ),
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Close"),
-        ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Close", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
+          ),
       ],
     );
   }
@@ -153,6 +203,16 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
       padding: EdgeInsets.all(8.0),
       child: Text(
         "Ping feature coming soon!",
+        style: TextStyle(fontSize: 14, color: Colors.black54),
+      ),
+    );
+  }
+
+  Widget _buildConnectionsUI() {
+    return const Padding(
+      padding: EdgeInsets.all(8.0),
+      child: Text(
+        "Connections feature coming soon!",
         style: TextStyle(fontSize: 14, color: Colors.black54),
       ),
     );

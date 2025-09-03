@@ -57,34 +57,74 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("Router Options"),
+      title: const Text("Router Options", style: TextStyle(fontWeight: FontWeight.bold)),
       content: SizedBox(
         width: 350,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+
+
             if (!showConfig && !showConsole && !showConnections) ...[
-              ElevatedButton(
-                onPressed: () => setState(() {
-                  showConfig = true;
-                }),
-                child: const Text("Configure"),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => setState(() {
+                    showConfig = true;
+                  }),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 34, 36, 49), 
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8), 
+                    ),
+                  ),
+                  child: const Text(
+                    "Configure",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
               ),
               const SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: () => setState(() {
-                  showConsole = true;
-                }),
-                child: const Text("Console"),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => setState(() {
+                    showConsole = true;
+                  }),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 34, 36, 49), 
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8), // Make button rounded
+                    ),
+                  ),
+                  child: const Text(
+                    "Console",
+                    style: TextStyle(color: Colors.white), 
+                  ),
+                ),
               ),
               const SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: () => setState(() {
-                  showConnections = true;
-                }),
-                child: const Text("Connections"),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => setState(() {
+                    showConnections = true;
+                  }),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 34, 36, 49), 
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8), // Make button rounded
+                    ),
+                  ),
+                  child: const Text(
+                    "Connections",
+                    style: TextStyle(color: Colors.white), 
+                  ),
+                ),
               ),
             ],
+
+
             if (showConfig) _buildConfigForm(),
             if (showConsole) _buildConsoleUI(),
             if (showConnections) _buildConnectionsUI(),
@@ -99,11 +139,11 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
               showConsole = false;
               showConnections = false;
             }),
-            child: const Text("Back"),
+            child: const Text("Back", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("Close"),
+          child: const Text("Close", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
         ),
       ],
     );
