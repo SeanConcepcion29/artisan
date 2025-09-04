@@ -1,4 +1,5 @@
 // project_workspace.dart
+import 'package:artisan/components/note_dialog.dart';
 import 'package:artisan/devices/ethernet_port.dart';
 import 'package:artisan/devices/pc_device.dart';
 import 'package:artisan/devices/router_device.dart';
@@ -21,8 +22,8 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
   bool _isExpanded = false;
   String? _selectedCategory;
   String? _selectedToolbar = "Select Tool";
-  List<DroppedItem> droppedItems = [];
 
+  List<DroppedItem> droppedItems = [];
   List<Connection> connections = [];
 
   @override
@@ -46,65 +47,51 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Top bar
+
+            /*** TOP BAR ***/
             Container(
               color: const Color.fromARGB(255, 34, 36, 49),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+
+                  /*** LEFT TOP BAR ***/
                   InkWell(
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
+                    onTap: () { Navigator.pop(context); },
                     child: Row(
                       children: [
                         SvgPicture.asset('assets/images/logo.svg', height: 30),
                         const SizedBox(width: 8),
                         Text(
                           widget.projectName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
                   ),
+
+                  /*** RIGHT TOP BAR ***/
                   Row(
                     children: [
-                      GestureDetector(
-                        onTap: () => {},
-                        child: const Icon(Icons.group, color: Colors.white),
-                      ),
+                      GestureDetector( onTap: () => {}, child: const Icon(Icons.group, color: Colors.white)),
                       const SizedBox(width: 16),
                       GestureDetector(
                         onTap: () async {
-                          // Save items + connections
-                          await saveWorkspace(
-                            widget.projectName,
-                            droppedItems,
-                            connections,
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Workspace saved!")),
-                          );
+                          await saveWorkspace(widget.projectName, droppedItems, connections);
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Workspace saved!")));
                         },
                         child: const Icon(Icons.save, color: Colors.white),
                       ),
                       const SizedBox(width: 16),
-                      GestureDetector(
-                        onTap: () => {},
-                        child: const Icon(Icons.share, color: Colors.white),
-                      ),
+                      GestureDetector(onTap: () => {}, child: const Icon(Icons.share, color: Colors.white)),
                     ],
                   ),
                 ],
               ),
             ),
 
-            // Toolbar row
+            /*** TOOLBAR ROW ***/
             Container(
               color: const Color(0xFF2A2B38),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -119,7 +106,10 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
               ),
             ),
 
-            // Workspace area
+
+
+
+            /*** WORKSPACE AREA ***/
             Expanded(
               child: Container(
                 color: Colors.white,
@@ -128,7 +118,6 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                     return DragTarget<_DragPayload>(
                       onAcceptWithDetails: (details) {
                         final payload = details.data;
-
                         setState(() {
                           if (payload.isNew) {
                             droppedItems.add(
@@ -157,13 +146,13 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                                 child: Text("Workspace Area", style: TextStyle(color: Colors.black54)),
                               ),
 
-                              // 🔥 Connection lines
+                              /*** CONNECTION LINES ***/
                               CustomPaint(
                                 size: Size.infinite,
                                 painter: ConnectionPainter(droppedItems, connections),
                               ),
 
-                              // 🔥 Devices
+                              /*** DEVICES ***/
                               ...droppedItems.asMap().entries.map((entry) {
                                 final index = entry.key;
                                 final item = entry.value;
@@ -173,16 +162,38 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                                 top: item.dy,
                                 child: GestureDetector(
                                   onTap: () async {
-                                    // Delete tool: remove item and related connections
+                                    
+                                    /*** DELETE TOOL ***/
                                     if (_selectedToolbar == "Delete") {
                                       final removed = droppedItems.removeAt(index);
-                                      // remove any connections tied to removed item
-                                      connections.removeWhere((c) =>
-                                          c.fromId == removed.id || c.toId == removed.id);
+
+                                      /* remove any connections tied to removed item */
+                                      connections.removeWhere((c) => c.fromId == removed.id || c.toId == removed.id);
                                       setState(() {});
                                     }
 
-                                    // Inspect Tool - PC
+                                    else if (_selectedToolbar == "Inspect Tool" && item.label == "Note") {
+                                      final updatedNote = await showDialog<Map<String, String>>(
+                                        context: context,
+                                        builder: (ctx) => NoteDialog(
+                                          initialTitle: item.noteTitle ?? "Note",
+                                          initialMessage: item.noteMessage ?? "",
+                                        ),
+                                      );
+
+                                      if (updatedNote != null) {
+                                        setState(() {
+                                          droppedItems[index] = droppedItems[index].copyWith(
+                                            noteTitle: updatedNote['title'],
+                                            noteMessage: updatedNote['message'],
+                                          );
+                                        });
+                                      }
+                                    }
+
+
+
+                                    /*** INSPECT TOOL - PC ***/
                                     else if (_selectedToolbar == "Inspect Tool" && item.label == "PC") {
                                       final updatedPC = await showDialog<PCDevice>(
                                         context: context,
@@ -194,9 +205,9 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                                             defaultGateway: "0.0.0.0",
                                           ),
                                           onSave: (pc) => Navigator.pop(ctx, pc),
-                                          droppedItems: droppedItems,     // ✅ pass items
-                                          connections: connections,       // ✅ pass connections
-                                          onConnectionsUpdated: () {      // ✅ tell workspace to refresh
+                                          droppedItems: droppedItems,    
+                                          connections: connections,       
+                                          onConnectionsUpdated: () {     
                                             setState(() {});
                                           },
                                         ),
@@ -211,7 +222,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                                       }
                                     }
 
-                                    // Inspect Tool - Router
+                                    /*** INSPECT TOOL - ROUTER ***/
                                     else if (_selectedToolbar == "Inspect Tool" &&
                                         item.label.contains("Router")) {
                                           final updatedRouter = await showDialog<RouterDevice>(
@@ -234,6 +245,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                                     }
                                   },
 
+                                  /*** SELECT TOOL ***/
                                   child: _selectedToolbar == "Select Tool"
                                       ? Draggable<_DragPayload>(
                                           data: _DragPayload.existing(item),
@@ -254,7 +266,9 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
               ),
             ),
 
-            // Bottom expandable bar
+
+
+            /*** BOTTOM BAR ***/
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
@@ -264,15 +278,13 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    // Expand/Collapse row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+
+                        /*** PLAY AND REPLAY BAR ***/
                         Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2A2B38),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                          decoration: BoxDecoration(color: const Color(0xFF2A2B38), borderRadius: BorderRadius.circular(8)),
                           child: Row(
                             children: [
                               IconButton(onPressed: () {}, icon: const Icon(Icons.replay, color: Colors.white)),
@@ -281,26 +293,18 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                           ),
                         ),
 
+                        /*** EXPAND BUTTON ***/
                         Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2A2B38),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-
+                          decoration: BoxDecoration(color: const Color(0xFF2A2B38), borderRadius: BorderRadius.circular(8)),
                           child: IconButton(
-                            onPressed: () {
-                              setState(() {
-                                _isExpanded = !_isExpanded;
-                              });
-                            },
-                            icon: Icon(
-                                _isExpanded ? Icons.close : Icons.add,
-                                color: Colors.white),
+                            onPressed: () {setState(() {_isExpanded = !_isExpanded;});},
+                            icon: Icon(_isExpanded ? Icons.close : Icons.add, color: Colors.white),
                           ),
                         ),
                       ],
                     ),
 
+                    /*** BOTTOM BAR CONTENT ***/
                     if (_isExpanded)
                       Padding(
                         padding: const EdgeInsets.only(top: 12),
@@ -308,7 +312,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
-                              flex: 3,
+                              flex: 4,
                               child: Padding(
                                 padding: const EdgeInsets.only(top: 10),
                                 child: SingleChildScrollView(
@@ -348,7 +352,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                             const SizedBox(width: 20),
 
                             Expanded(
-                              flex: 2,
+                              flex: 3,
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF2A2B38),
@@ -392,25 +396,39 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
     );
   }
 
-  Widget _toolbarButton(String text) {
-    final bool isSelected = _selectedToolbar == text;
 
-    return TextButton(
-      onPressed: () {
-        setState(() {
-          _selectedToolbar = text;
-        });
-      },
-      child: Text(
-        text,
-        style: TextStyle(
-          color: isSelected ? Colors.purple : Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
+    Widget _toolbarButton(String text) {
+      final bool isSelected = _selectedToolbar == text;
+
+      return TextButton(
+        onPressed: () {
+          setState(() {
+            _selectedToolbar = text;
+
+            if (text == "Add Note") {
+              droppedItems.add(
+                DroppedItem(
+                  label: "Note",
+                  iconCodePoint: Icons.note.codePoint,
+                  dx: 100, // default x position
+                  dy: 100, // default y position
+                ),
+              );
+            }
+          });
+        },
+        child: Text(
+          text,
+          style: TextStyle(
+            color: isSelected ? Colors.purple : Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
         ),
-      ),
-    );
-  }
+      );
+    }
+
+
 
   Widget _deviceItem(IconData icon, String label) {
     final bool isSelected = _selectedCategory == label;
@@ -441,6 +459,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
     );
   }
 
+
   Widget _subOption(IconData icon, String name) {
     return Draggable<_DragPayload>(
       data: _DragPayload.newItem(icon, name),
@@ -458,7 +477,10 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
     );
   }
 
+
   Widget _workspaceItem(DroppedItem item, {bool isDragging = false}) {
+    final displayText = item.label == "Note" && item.noteTitle != null ? item.noteTitle! : item.label;
+
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -468,24 +490,43 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(item.icon, color: Colors.white, size: 48),
-          const SizedBox(height: 4),
-          Text(item.label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+          Icon(
+            item.icon,
+            color: item.label == "Note" ? const Color.fromARGB(153, 255, 235, 59) : Colors.white,
+            size: item.label == "Note" ? 32 : 48,
+          ),
+
+          SizedBox(
+            width: 50, 
+            child: Text(
+              displayText,
+              style: TextStyle(
+                color: item.label == "Note" ? const Color.fromARGB(153, 255, 235, 59) : Colors.white,
+                fontSize: item.label == "Note" ? 10 : 12,
+                fontWeight: item.label == "Note" ? FontWeight.bold : FontWeight.normal,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              textAlign: TextAlign.center,
+            ),
+          ),
 
           if (item.label == "PC" && item.pcConfig != null) ...[
-            const SizedBox(height: 4),
             Text(item.pcConfig!.name, style: const TextStyle(color: Colors.greenAccent, fontSize: 10)),
           ],
 
           if (item.label.contains("Router") && item.routerConfig != null) ...[
-            const SizedBox(height: 4),
             Text(item.routerConfig!.name, style: const TextStyle(color: Colors.greenAccent, fontSize: 10)),
           ],
         ],
       ),
     );
   }
+
+
 }
+
+
 
 /// --------------------------------
 /// DRAGGABLES
@@ -500,6 +541,8 @@ class DroppedItem {
 
   final PCDevice? pcConfig;
   final RouterDevice? routerConfig;
+  final String? noteTitle;   // new
+  final String? noteMessage; // new
 
   DroppedItem({
     String? id,
@@ -509,6 +552,8 @@ class DroppedItem {
     required this.dy,
     this.pcConfig,
     this.routerConfig,
+    this.noteTitle,
+    this.noteMessage,
   }) : id = id ?? const Uuid().v4();
 
   IconData get icon => IconData(iconCodePoint, fontFamily: 'MaterialIcons');
@@ -520,15 +565,19 @@ class DroppedItem {
     double? dy,
     PCDevice? pcConfig,
     RouterDevice? routerConfig,
+    String? noteTitle,
+    String? noteMessage,
   }) {
     return DroppedItem(
-      id: id, // preserve existing id
+      id: id,
       label: label ?? this.label,
       iconCodePoint: iconCodePoint ?? this.iconCodePoint,
       dx: dx ?? this.dx,
       dy: dy ?? this.dy,
       pcConfig: pcConfig ?? this.pcConfig,
       routerConfig: routerConfig ?? this.routerConfig,
+      noteTitle: noteTitle ?? this.noteTitle,
+      noteMessage: noteMessage ?? this.noteMessage,
     );
   }
 
@@ -541,6 +590,8 @@ class DroppedItem {
       'dy': dy,
       'pcConfig': pcConfig?.toMap(),
       'routerConfig': routerConfig?.toMap(),
+      'noteTitle': noteTitle,
+      'noteMessage': noteMessage,
     };
   }
 
@@ -551,11 +602,19 @@ class DroppedItem {
       iconCodePoint: map['iconCodePoint'] as int,
       dx: (map['dx'] as num).toDouble(),
       dy: (map['dy'] as num).toDouble(),
-      pcConfig: map['pcConfig'] != null ? PCDevice.fromMap(Map<String, dynamic>.from(map['pcConfig'])) : null,
-      routerConfig: map['routerConfig'] != null ? RouterDevice.fromMap(Map<String, dynamic>.from(map['routerConfig'])) : null,
+      pcConfig: map['pcConfig'] != null
+          ? PCDevice.fromMap(Map<String, dynamic>.from(map['pcConfig']))
+          : null,
+      routerConfig: map['routerConfig'] != null
+          ? RouterDevice.fromMap(Map<String, dynamic>.from(map['routerConfig']))
+          : null,
+      noteTitle: map['noteTitle'] as String?,
+      noteMessage: map['noteMessage'] as String?,
     );
   }
 }
+
+
 
 class _DragPayload {
   final bool isNew;
@@ -573,6 +632,12 @@ class _DragPayload {
         label = null;
 }
 
+
+
+/// --------------------------------
+/// CONNECTIONS
+/// --------------------------------
+
 class Connection {
   final String fromId;
   final String toId;
@@ -583,7 +648,7 @@ class Connection {
   factory Connection.fromMap(Map<String, dynamic> map) => Connection(map['from'] as String, map['to'] as String);
 }
 
-/// Painter for drawing cable lines between connected items
+
 class ConnectionPainter extends CustomPainter {
   final List<DroppedItem> items;
   final List<Connection> connections;
@@ -593,8 +658,8 @@ class ConnectionPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.black
-      ..strokeWidth = 2;
+      ..color = Color.fromARGB(255, 34, 36, 49)
+      ..strokeWidth = 3;
 
     for (var conn in connections) {
       final fromIndex = items.indexWhere((i) => i.id == conn.fromId);
@@ -605,7 +670,7 @@ class ConnectionPainter extends CustomPainter {
       final from = items[fromIndex];
       final to = items[toIndex];
 
-      final fromOffset = Offset(from.dx + 40, from.dy + 40); // approximate center
+      final fromOffset = Offset(from.dx + 40, from.dy + 40); 
       final toOffset = Offset(to.dx + 40, to.dy + 40);
 
       canvas.drawLine(fromOffset, toOffset, paint);
@@ -615,6 +680,8 @@ class ConnectionPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant ConnectionPainter oldDelegate) => true;
 }
+
+
 
 /// --------------------------------
 /// SAVING AND LOADING
@@ -626,6 +693,7 @@ class WorkspaceData {
   WorkspaceData({required this.items, required this.connections});
 }
 
+
 Future<void> saveWorkspace(String projectName, List<DroppedItem> items, List<Connection> connections) async {
   final ref = FirebaseFirestore.instance.collection('workspaces').doc(projectName);
   await ref.set({
@@ -633,6 +701,7 @@ Future<void> saveWorkspace(String projectName, List<DroppedItem> items, List<Con
     'connections': connections.map((c) => c.toMap()).toList(),
   });
 }
+
 
 Future<WorkspaceData> loadWorkspace(String projectName) async {
   final ref = FirebaseFirestore.instance.collection('workspaces').doc(projectName);
@@ -644,19 +713,14 @@ Future<WorkspaceData> loadWorkspace(String projectName) async {
   final rawItems = (data['items'] as List?) ?? [];
   final rawConnections = (data['connections'] as List?) ?? [];
 
-  final items = rawItems
-      .map((e) => DroppedItem.fromMap(Map<String, dynamic>.from(e as Map)))
-      .toList();
+  final items = rawItems.map((e) => DroppedItem.fromMap(Map<String, dynamic>.from(e as Map))).toList();
+  final conns = rawConnections.map((e) => Connection.fromMap(Map<String, dynamic>.from(e as Map))).toList();
 
-  final conns = rawConnections
-      .map((e) => Connection.fromMap(Map<String, dynamic>.from(e as Map)))
-      .toList();
-
-  // 🔥 Restore EthernetPort state from saved connections
   restoreConnections(items, conns);
 
   return WorkspaceData(items: items, connections: conns);
 }
+
 
 void restoreConnections(List<DroppedItem> droppedItems, List<Connection> connections) {
   for (final conn in connections) {
@@ -665,15 +729,12 @@ void restoreConnections(List<DroppedItem> droppedItems, List<Connection> connect
 
     if (fromItem == null || toItem == null) continue;
 
-    if (fromItem.pcConfig != null && toItem.routerConfig != null) {
-      connectPCToRouter(fromItem.pcConfig!, toItem.routerConfig!);
-    } else if (fromItem.routerConfig != null && toItem.pcConfig != null) {
-      connectPCToRouter(toItem.pcConfig!, fromItem.routerConfig!);
-    } else if (fromItem.routerConfig != null && toItem.routerConfig != null) {
-      connectRouterToRouter(fromItem.routerConfig!, toItem.routerConfig!);
-    }
+    if (fromItem.pcConfig != null && toItem.routerConfig != null) { connectPCToRouter(fromItem.pcConfig!, toItem.routerConfig!); }
+    else if (fromItem.routerConfig != null && toItem.pcConfig != null) { connectPCToRouter(toItem.pcConfig!, fromItem.routerConfig!); }
+    else if (fromItem.routerConfig != null && toItem.routerConfig != null) { connectRouterToRouter(fromItem.routerConfig!, toItem.routerConfig!); }
   }
 }
+
 
 DroppedItem? safeFind(List<DroppedItem> items, String id) {
   try {
@@ -682,5 +743,3 @@ DroppedItem? safeFind(List<DroppedItem> items, String id) {
     return null;
   }
 }
-
-

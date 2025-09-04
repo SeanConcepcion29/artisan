@@ -6,35 +6,25 @@ import 'package:artisan/pages/project_workspace.dart';
 
 class RouterDevice {
   String name;
-  bool nameLocked; // <- lock after first change
 
-  // Router has 2 Ethernet ports by default
-  final List<EthernetPort> ports = [
-    EthernetPort(id: "eth0"),
-    EthernetPort(id: "eth1"),
-  ];
+  final List<EthernetPort> ports = [EthernetPort(id: "eth0"), EthernetPort(id: "eth1")];
 
   RouterDevice({
     required this.name,
-    this.nameLocked = false,
   });
 
   Map<String, dynamic> toMap() {
     return {
       'name': name,
-      'nameLocked': nameLocked,
-      // ports are ephemeral UI objects; if you want to persist connections you'll persist them separately
     };
   }
 
   factory RouterDevice.fromMap(Map<String, dynamic> map) {
     return RouterDevice(
       name: map['name'] ?? 'Router',
-      nameLocked: map['nameLocked'] == true,
     );
   }
 
-  // Find a free port
   EthernetPort? getFreePort() {
     try {
       return ports.firstWhere((p) => p.isFree);
@@ -44,13 +34,16 @@ class RouterDevice {
   }
 }
 
-/// RouterConfigDialog
+
+
 class RouterConfigDialog extends StatefulWidget {
   final RouterDevice router;
   final void Function(RouterDevice router) onSave;
+
+  /* MANAGE WORKSPACE CONNECTIONS */
   final List<DroppedItem> droppedItems;
   final List<Connection> connections;
-  final VoidCallback onConnectionsUpdated; // notify parent to redraw
+  final VoidCallback onConnectionsUpdated; 
 
   const RouterConfigDialog({
     super.key,
@@ -65,6 +58,7 @@ class RouterConfigDialog extends StatefulWidget {
   State<RouterConfigDialog> createState() => _RouterConfigDialogState();
 }
 
+
 class _RouterConfigDialogState extends State<RouterConfigDialog> {
   late TextEditingController nameController;
 
@@ -72,14 +66,16 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
   bool showConsole = false;
   bool showConnections = false;
 
-  // allow editing only until the router's name is locked
+
   late bool isNameEditable;
 
   @override
   void initState() {
     super.initState();
+
     nameController = TextEditingController(text: widget.router.name);
-    isNameEditable = !widget.router.nameLocked;
+
+    isNameEditable = widget.router.name == "Router";
   }
 
   @override
@@ -87,6 +83,7 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
     nameController.dispose();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -110,14 +107,11 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
           ],
         ),
       ),
+
       actions: [
         if (showConfig || showConsole || showConnections)
           TextButton(
-            onPressed: () => setState(() {
-              showConfig = false;
-              showConsole = false;
-              showConnections = false;
-            }),
+            onPressed: () => setState(() { showConfig = false; showConsole = false; showConnections = false; }),
             child: const Text("Back", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
           ),
         TextButton(
@@ -128,68 +122,45 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
     );
   }
 
+
   Widget _menuButton(String text, VoidCallback onPressed) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
         onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color.fromARGB(255, 34, 36, 49),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
+        style: ElevatedButton.styleFrom(backgroundColor: const Color.fromARGB(255, 34, 36, 49), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
         child: Text(text, style: const TextStyle(color: Colors.white)),
       ),
     );
   }
 
-  /// Config form with one-time name edit (locks after first change)
+
   Widget _buildConfigForm() {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          children: [
-            const SizedBox(width: 120, child: Text("Router Name:")),
-            Expanded(
-              child: TextField(
-                controller: nameController,
-                readOnly: !isNameEditable,
-                decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  fillColor: !isNameEditable ? Colors.grey.shade200 : null,
-                  filled: !isNameEditable,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
+        _field("Router Name:", nameController, readOnly: !isNameEditable),
+        const SizedBox(height: 8),
+
         ElevatedButton(
           onPressed: () {
-            // update the existing router instance (not create a new one)
-            final newName = nameController.text.trim();
-            if (newName.isNotEmpty && widget.router.name != newName) {
-              widget.router.name = newName;
+            final updatedRouter = RouterDevice(
+              name: nameController.text,
+            );
+
+            if (widget.router.name == "Router" && nameController.text != "Router") {
+              setState(() { isNameEditable = false; });
             }
 
-            // lock name after first set (if not locked already)
-            if (!widget.router.nameLocked && newName.isNotEmpty) {
-              widget.router.nameLocked = true;
-              isNameEditable = false;
-            }
-
-            // notify parent and save
-            widget.onSave(widget.router);
-            widget.onConnectionsUpdated();
-
-            // (the parent onSave may close the dialog -- typical usage: onSave -> Navigator.pop(ctx, router))
+            widget.onSave(updatedRouter);
           },
+
           child: const Text("Apply"),
         ),
       ],
     );
   }
+
 
   Widget _buildConsoleUI() {
     return const Padding(
@@ -198,12 +169,20 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
     );
   }
 
-  Widget _buildConnectionsUI() {
-    // Get all PCs
-    final availablePCs = widget.droppedItems.where((item) => item.pcConfig != null).map((i) => i.pcConfig!).toList();
 
-    // Get all other Routers (exclude self)
-    final availableRouters = widget.droppedItems.where((item) => item.routerConfig != null && item.routerConfig != widget.router).map((i) => i.routerConfig!).toList();
+  Widget _buildConnectionsUI() {
+
+    /*** GET ALL PCs FROM droppedItems ***/
+    final availablePCs = widget.droppedItems
+      .where((item) => item.pcConfig != null)
+      .map((i) => i.pcConfig!)
+      .toList();
+
+    /*** GET ALL ROUTERS FROM droppedItems EXCEPT SELF ***/
+    final availableRouters = widget.droppedItems
+      .where((item) => item.routerConfig != null && item.routerConfig != widget.router)
+      .map((i) => i.routerConfig!)
+      .toList();
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -211,26 +190,31 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
         const Text("Ethernet Ports:", style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         ...widget.router.ports.map((port) {
+
           return ListTile(
             leading: const Icon(Icons.cable, color: Colors.black87),
             title: Text(port.id),
-            subtitle: port.isFree ? const Text("Available")
-                : Text("Connected to ${port.connectedPC?.name ?? port.connectedRouter?.name ?? 'Unknown'}"),
+            subtitle: port.isFree ? const Text("Available") : Text("Connected to ${port.connectedPC?.name ?? port.connectedRouter?.name ?? 'Unknown'}"),
             trailing: port.isFree
+
+                /*** NO CONNECTION ***/
                 ? PopupMenuButton<dynamic>(
                     icon: const Icon(Icons.add_link, color: Colors.green),
                     onSelected: (target) {
                       setState(() {
+
+                        /*** CONNECT PC TO THIS ROUTER ***/
                         if (target is PCDevice) {
-                          // connect PC -> this router
                           if (connectPCToRouter(target, widget.router)) {
                             final pcItem = widget.droppedItems.firstWhere((i) => i.pcConfig == target);
                             final routerItem = widget.droppedItems.firstWhere((i) => i.routerConfig == widget.router);
                             widget.connections.add(Connection(pcItem.id, routerItem.id));
                             widget.onConnectionsUpdated();
                           }
-                        } else if (target is RouterDevice) {
-                          // router <-> router
+                        }
+                        
+                        /*** CONNECT ROUTER TO THIS ROUTER ***/
+                        else if (target is RouterDevice) {                  
                           if (connectRouterToRouter(widget.router, target)) {
                             final r1 = widget.droppedItems.firstWhere((i) => i.routerConfig == widget.router);
                             final r2 = widget.droppedItems.firstWhere((i) => i.routerConfig == target);
@@ -240,13 +224,16 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
                         }
                       });
                     },
+
                     itemBuilder: (context) {
                       return [
-                        ...availablePCs.where((pc) => pc.port.isFree).map((pc) => PopupMenuItem(value: pc, child: Text("PC: ${pc.name}"))),
-                        ...availableRouters.where((r) => r.getFreePort() != null).map((r) => PopupMenuItem(value: r, child: Text("Router: ${r.name}"))),
+                        ...availablePCs.where((pc) => pc.port.isFree).map((pc) => PopupMenuItem(value: pc, child: Text("[PC] ${pc.name}"))),
+                        ...availableRouters.where((r) => r.getFreePort() != null).map((r) => PopupMenuItem(value: r, child: Text("[ROUTER] ${r.name}"))),
                       ];
                     },
                   )
+
+                /*** CONNECTED ALREADY ***/
                 : IconButton(
                     icon: const Icon(Icons.link_off, color: Colors.red),
                     onPressed: () {
@@ -254,8 +241,8 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
                         final pc = port.connectedPC;
                         final router = port.connectedRouter;
 
+                        /*** REMOVE PC CONNECTION ***/
                         if (pc != null) {
-                          // disconnect pc <-> router
                           pc.port.disconnect();
                           port.disconnect();
 
@@ -266,8 +253,10 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
                             (c.fromId == pcItem.id && c.toId == routerItem.id) ||
                             (c.fromId == routerItem.id && c.toId == pcItem.id)
                           );
-                        } else if (router != null) {
-                          // disconnect router <-> router (clear both ports)
+                        }
+                        
+                        /*** REMOVE ROUTER CONNECTION ***/
+                        else if (router != null) {
                           final otherPort = router.ports.firstWhere((p) => p.connectedRouter == widget.router, orElse: () => router.ports.first);
 
                           port.disconnect();
@@ -291,5 +280,25 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
       ],
     );
   }
-}
 
+
+  Widget _field(String label, TextEditingController controller, {bool readOnly = false}) {
+    return Row(
+      children: [
+        SizedBox(width: 120, child: Text(label)),
+        Expanded(
+          child: TextField(
+            controller: controller,
+            readOnly: readOnly,
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              fillColor: readOnly ? Colors.grey.shade200 : null,
+              filled: readOnly,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
