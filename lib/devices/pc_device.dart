@@ -1,4 +1,7 @@
+import 'package:artisan/devices/router_device.dart';
 import 'package:flutter/material.dart';
+import 'package:artisan/devices/ethernet_port.dart';
+import 'package:artisan/pages/project_workspace.dart';
 
 class PCDevice {
   String name;
@@ -6,14 +9,16 @@ class PCDevice {
   String subnetMask;
   String defaultGateway;
 
+  // ✅ PC has only one port
+  final EthernetPort port = EthernetPort(id: "eth0");
+
   PCDevice({
     required this.name,
     required this.ipAddress,
-    this.subnetMask = "255.255.255.0", // ✅ Default mask
+    this.subnetMask = "255.255.255.0",
     required this.defaultGateway,
   });
 
-  // For Firestore serialization
   Map<String, dynamic> toMap() {
     return {
       'name': name,
@@ -37,7 +42,19 @@ class PCConfigDialog extends StatefulWidget {
   final PCDevice pc;
   final void Function(PCDevice pc) onSave;
 
-  const PCConfigDialog({super.key, required this.pc, required this.onSave});
+  // 🔑 Needed to manage workspace connections
+  final List<DroppedItem> droppedItems;
+  final List<Connection> connections;
+  final VoidCallback onConnectionsUpdated;
+
+  const PCConfigDialog({
+    super.key,
+    required this.pc,
+    required this.onSave,
+    required this.droppedItems,
+    required this.connections,
+    required this.onConnectionsUpdated,
+  });
 
   @override
   State<PCConfigDialog> createState() => _PCConfigDialogState();
@@ -53,6 +70,9 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
   bool showPing = false;
   bool showConnections = false;
 
+  // ✅ Track if name can still be changed
+  late bool isNameEditable;
+
   @override
   void initState() {
     super.initState();
@@ -64,6 +84,9 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
           : "255.255.255.0",
     );
     gatewayController = TextEditingController(text: widget.pc.defaultGateway);
+
+    // Only allow editing if it's still "PC"
+    isNameEditable = widget.pc.name == "PC";
   }
 
   @override
@@ -78,74 +101,20 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("PC Options", style: TextStyle(fontWeight: FontWeight.bold)),
+      title:
+          const Text("PC Options", style: TextStyle(fontWeight: FontWeight.bold)),
       content: SizedBox(
         width: 350,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-
-
             if (!showConfig && !showPing && !showConnections) ...[
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => setState(() {
-                    showConfig = true;
-                  }),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 34, 36, 49), 
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8), 
-                    ),
-                  ),
-                  child: const Text(
-                    "Configure",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ),
+              _menuButton("Configure", () => setState(() => showConfig = true)),
               const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => setState(() {
-                    showPing = true;
-                  }),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 34, 36, 49), 
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8), // Make button rounded
-                    ),
-                  ),
-                  child: const Text(
-                    "Ping",
-                    style: TextStyle(color: Colors.white), // Change font color
-                  ),
-                ),
-              ),
+              _menuButton("Ping", () => setState(() => showPing = true)),
               const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => setState(() {
-                    showConnections = true;
-                  }),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 34, 36, 49), 
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8), // Make button rounded
-                    ),
-                  ),
-                  child: const Text(
-                    "Connections",
-                    style: TextStyle(color: Colors.white), 
-                  ),
-                ),
-              ),
+              _menuButton("Connections", () => setState(() => showConnections = true)),
             ],
-
-
             if (showConfig) _buildConfigForm(),
             if (showPing) _buildPingUI(),
             if (showConnections) _buildConnectionsUI(),
@@ -160,13 +129,33 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
               showPing = false;
               showConnections = false;
             }),
-            child: const Text("Back", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
+            child: const Text("Back",
+                style: TextStyle(
+                    color: Color.fromARGB(255, 34, 36, 49),
+                    fontWeight: FontWeight.bold)),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Close", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
-          ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Close",
+              style: TextStyle(
+                  color: Color.fromARGB(255, 34, 36, 49),
+                  fontWeight: FontWeight.bold)),
+        ),
       ],
+    );
+  }
+
+  Widget _menuButton(String text, VoidCallback onPressed) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color.fromARGB(255, 34, 36, 49),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        child: Text(text, style: const TextStyle(color: Colors.white)),
+      ),
     );
   }
 
@@ -174,7 +163,7 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _field("PC Name:", nameController),
+        _field("PC Name:", nameController, readOnly: !isNameEditable),
         const SizedBox(height: 8),
         _field("IP Address:", ipController),
         const SizedBox(height: 8),
@@ -190,6 +179,14 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
               subnetMask: maskController.text,
               defaultGateway: gatewayController.text,
             );
+
+            // 🔒 Once name is changed, lock it
+            if (widget.pc.name == "PC" && nameController.text != "PC") {
+              setState(() {
+                isNameEditable = false;
+              });
+            }
+
             widget.onSave(updatedPC);
           },
           child: const Text("Apply"),
@@ -207,31 +204,122 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
       ),
     );
   }
+Widget _buildConnectionsUI() {
+  // Get all Routers from droppedItems
+  final availableRouters = widget.droppedItems
+      .where((item) => item.routerConfig != null)
+      .map((item) => item.routerConfig!)
+      .toList();
 
-  Widget _buildConnectionsUI() {
-    return const Padding(
-      padding: EdgeInsets.all(8.0),
-      child: Text(
-        "Connections feature coming soon!",
-        style: TextStyle(fontSize: 14, color: Colors.black54),
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      const Text("Ethernet Port:",
+          style: TextStyle(fontWeight: FontWeight.bold)),
+      const SizedBox(height: 8),
+      ListTile(
+        leading: const Icon(Icons.cable, color: Colors.black87),
+        title: Text(widget.pc.port.id),
+        subtitle: widget.pc.port.isFree
+            ? const Text("Not connected")
+            : Text(
+                "Connected to ${widget.pc.port.connectedRouter?.name ?? 'Router'}"),
+        trailing: widget.pc.port.isFree
+            // ✅ PC can now connect to a Router
+            ? PopupMenuButton<RouterDevice>(
+                icon: const Icon(Icons.add_link, color: Colors.green),
+                onSelected: (router) {
+                  setState(() {
+                    if (connectPCToRouter(widget.pc, router)) {
+                      final pcItem = widget.droppedItems
+                          .firstWhere((i) => i.pcConfig == widget.pc);
+                      final routerItem = widget.droppedItems
+                          .firstWhere((i) => i.routerConfig == router);
+
+                      widget.connections
+                          .add(Connection(pcItem.id, routerItem.id));
+                      widget.onConnectionsUpdated(); // 🔑 refresh workspace
+                    }
+                  });
+                },
+                itemBuilder: (context) {
+                  return availableRouters
+                      .where((router) => router.getFreePort() != null)
+                      .map((router) => PopupMenuItem(
+                            value: router,
+                            child: Text(router.name),
+                          ))
+                      .toList();
+                },
+              )
+            // ✅ Already connected → allow disconnect
+            : IconButton(
+                icon: const Icon(Icons.link_off, color: Colors.red),
+                onPressed: () {
+                  setState(() {
+                    final router = widget.pc.port.connectedRouter;
+                    if (router != null) {
+                      // 🔑 disconnect both ends
+                      final routerPort = router.ports.firstWhere(
+                        (p) => p.connectedPC == widget.pc,
+                        orElse: () => router.ports.first,
+                      );
+
+                      widget.pc.port.disconnect();
+                      routerPort.disconnect();
+
+                      // find DroppedItems for PC and Router
+                      final pcItem = widget.droppedItems.firstWhere(
+                        (i) => i.pcConfig == widget.pc,
+                      );
+                      final routerItem = widget.droppedItems.firstWhere(
+                        (i) => i.routerConfig == router,
+                      );
+
+                      // remove visible connection
+                      widget.connections.removeWhere(
+                        (c) =>
+                            (c.fromId == pcItem.id &&
+                                c.toId == routerItem.id) ||
+                            (c.fromId == routerItem.id &&
+                                c.toId == pcItem.id),
+                      );
+
+                      widget.onConnectionsUpdated(); // refresh workspace
+                    }
+                  });
+                },
+              ),
       ),
-    );
-  }
+    ],
+  );
+}
 
-  Widget _field(String label, TextEditingController controller) {
+
+  Widget _field(String label, TextEditingController controller,
+      {bool readOnly = false}) {
     return Row(
       children: [
         SizedBox(width: 120, child: Text(label)),
         Expanded(
           child: TextField(
             controller: controller,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            readOnly: readOnly,
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              fillColor: readOnly ? Colors.grey.shade200 : null,
+              filled: readOnly,
             ),
           ),
         ),
       ],
     );
   }
+}
+
+/// ✅ Extension for PCDevice
+extension PCDeviceExtension on PCDevice {
+  bool get isConnected => !port.isFree;
 }
