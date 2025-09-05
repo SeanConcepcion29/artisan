@@ -1,4 +1,3 @@
-
 import 'package:artisan/components/note_dialog.dart';
 import 'package:artisan/devices/ethernet_port.dart';
 import 'package:artisan/devices/pc_device.dart';
@@ -760,19 +759,33 @@ void restoreConnections(List<DroppedItem> droppedItems, List<Connection> connect
 
     if (fromItem.pcConfig != null && toItem.routerConfig != null) {
       connectPCToRouter(fromItem.pcConfig!, toItem.routerConfig!);
-    } else if (fromItem.routerConfig != null && toItem.pcConfig != null) {
+    }
+    
+    else if (fromItem.routerConfig != null && toItem.pcConfig != null) {
       connectPCToRouter(toItem.pcConfig!, fromItem.routerConfig!);
-    } else if (fromItem.routerConfig != null && toItem.routerConfig != null) {
+    }
+    
+    else if (fromItem.routerConfig != null && toItem.routerConfig != null) {
       connectRouterToRouter(fromItem.routerConfig!, toItem.routerConfig!);
-    } else if (fromItem.pcConfig != null && toItem.switchConfig != null) {
+    }
+    
+    else if (fromItem.pcConfig != null && toItem.switchConfig != null) {
       connectPCToSwitch(fromItem.pcConfig!, toItem.switchConfig!);
-    } else if (fromItem.switchConfig != null && toItem.pcConfig != null) {
+    }
+    
+    else if (fromItem.switchConfig != null && toItem.pcConfig != null) {
       connectPCToSwitch(toItem.pcConfig!, fromItem.switchConfig!);
-    } else if (fromItem.routerConfig != null && toItem.switchConfig != null) {
+    }
+    
+    else if (fromItem.routerConfig != null && toItem.switchConfig != null) {
       connectRouterToSwitch(fromItem.routerConfig!, toItem.switchConfig!);
-    } else if (fromItem.switchConfig != null && toItem.routerConfig != null) {
+    }
+    
+    else if (fromItem.switchConfig != null && toItem.routerConfig != null) {
       connectRouterToSwitch(toItem.routerConfig!, fromItem.switchConfig!);
-    } else if (fromItem.switchConfig != null && toItem.switchConfig != null) {
+    }
+    
+    else if (fromItem.switchConfig != null && toItem.switchConfig != null) {
       connectSwitchToSwitch(fromItem.switchConfig!, toItem.switchConfig!);
     }
   }
