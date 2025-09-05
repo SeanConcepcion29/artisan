@@ -1,8 +1,10 @@
-import 'package:artisan/devices/router_device.dart';
-import 'package:artisan/devices/switch_device.dart';
 import 'package:flutter/material.dart';
 import 'package:artisan/devices/ethernet_port.dart';
+import 'package:artisan/devices/router_device.dart';
+import 'package:artisan/devices/switch_device.dart';
+import 'package:artisan/devices/pc_console.dart';
 import 'package:artisan/pages/project_workspace.dart';
+
 
 class PCDevice {
   String name;
@@ -10,17 +12,19 @@ class PCDevice {
   String subnetMask;
   String defaultGateway;
 
-  final EthernetPort port = EthernetPort(id: "eth0");
+  final EthernetPort port = EthernetPort(id: "eth0/0");
 
-  // Console state
   List<String> consoleHistory = [];
+  late PCConsole console;
 
   PCDevice({
     required this.name,
     required this.ipAddress,
     this.subnetMask = "255.255.255.0",
     required this.defaultGateway,
-  });
+  }) {
+    console = PCConsole(this);
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -33,36 +37,22 @@ class PCDevice {
   }
 
   factory PCDevice.fromMap(Map<String, dynamic> map) {
-    return PCDevice(
+    final pc = PCDevice(
       name: map['name'] ?? 'PC',
       ipAddress: map['ipAddress'] ?? '0.0.0.0',
       subnetMask: map['subnetMask'] ?? '255.255.255.0',
       defaultGateway: map['defaultGateway'] ?? '0.0.0.0',
-    )..consoleHistory = List<String>.from(map['consoleHistory'] ?? []);
-  }
-
-  /// Process commands for the PC console
-  String processCommand(String input) {
-    if (input.trim().isEmpty) return "";
-    switch (input.toLowerCase()) {
-      case "ipconfig":
-        return "IP Address: $ipAddress\nSubnet Mask: $subnetMask\nDefault Gateway: $defaultGateway";
-      case "help":
-        return "Available commands:\n- ipconfig\n- help\n- clear";
-      case "clear":
-        consoleHistory.clear();
-        return "";
-      default:
-        return "Unknown command: $input";
-    }
+    );
+    pc.consoleHistory = List<String>.from(map['consoleHistory'] ?? []);
+    return pc;
   }
 }
+
 
 class PCConfigDialog extends StatefulWidget {
   final PCDevice pc;
   final void Function(PCDevice pc) onSave;
 
-  /* MANAGE WORKSPACE CONNECTIONS */
   final List<DroppedItem> droppedItems;
   final List<Connection> connections;
   final VoidCallback onConnectionsUpdated;
@@ -80,12 +70,12 @@ class PCConfigDialog extends StatefulWidget {
   State<PCConfigDialog> createState() => _PCConfigDialogState();
 }
 
+
 class _PCConfigDialogState extends State<PCConfigDialog> {
   late TextEditingController nameController;
   late TextEditingController ipController;
   late TextEditingController maskController;
   late TextEditingController gatewayController;
-
   late TextEditingController _consoleController;
 
   bool showConfig = false;
@@ -101,13 +91,10 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
 
     nameController = TextEditingController(text: widget.pc.name);
     ipController = TextEditingController(text: widget.pc.ipAddress);
-    maskController = TextEditingController(
-      text: widget.pc.subnetMask.isNotEmpty ? widget.pc.subnetMask : "255.255.255.0",
-    );
+    maskController = TextEditingController(text: widget.pc.subnetMask.isNotEmpty ? widget.pc.subnetMask : "255.255.255.0");
     gatewayController = TextEditingController(text: widget.pc.defaultGateway);
 
     _consoleController = TextEditingController();
-
     isNameEditable = widget.pc.name == "PC";
   }
 
@@ -157,21 +144,16 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
               showConnections = false;
               showConsole = false;
             }),
-            child: const Text("Back",
-                style: TextStyle(
-                    color: Color.fromARGB(255, 34, 36, 49),
-                    fontWeight: FontWeight.bold)),
+            child: const Text("Back", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("Close",
-              style: TextStyle(
-                  color: Color.fromARGB(255, 34, 36, 49),
-                  fontWeight: FontWeight.bold)),
+          child: const Text("Close", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
         ),
       ],
     );
   }
+
 
   Widget _menuButton(String text, VoidCallback onPressed, {bool enabled = true}) {
     return SizedBox(
@@ -179,15 +161,14 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
       child: ElevatedButton(
         onPressed: enabled ? onPressed : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: enabled
-              ? const Color.fromARGB(255, 34, 36, 49)
-              : Colors.grey,
+          backgroundColor: enabled ? const Color.fromARGB(255, 34, 36, 49) : Colors.grey,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: Text(text, style: const TextStyle(color: Colors.white)),
       ),
     );
   }
+
 
   Widget _buildConfigForm() {
     return Column(
@@ -209,9 +190,7 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
             widget.pc.defaultGateway = gatewayController.text;
 
             if (widget.pc.name == "PC" && nameController.text != "PC") {
-              setState(() {
-                isNameEditable = false;
-              });
+              setState(() { isNameEditable = false; });
             }
 
             widget.onSave(widget.pc);
@@ -222,20 +201,20 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
     );
   }
 
+
   Widget _buildPingUI() {
     return const Padding(
       padding: EdgeInsets.all(8.0),
-      child: Text("Ping feature coming soon!",
-          style: TextStyle(fontSize: 14, color: Colors.black54)),
+      child: Text("Ping feature coming soon!", style: TextStyle(fontSize: 14, color: Colors.black54)),
     );
   }
+
 
   Widget _buildConnectionsUI() {
     final availableRouters = widget.droppedItems
         .where((item) => item.routerConfig != null)
         .map((item) => item.routerConfig!)
         .toList();
-
     final availableSwitches = widget.droppedItems
         .where((item) => item.switchConfig != null)
         .map((item) => item.switchConfig!)
@@ -249,9 +228,11 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
         ListTile(
           leading: const Icon(Icons.cable, color: Colors.black87),
           title: Text(widget.pc.port.id),
+
           subtitle: widget.pc.port.isFree
               ? const Text("Not connected")
               : Text("Connected to ${widget.pc.port.connectedRouter?.name ?? widget.pc.port.connectedSwitch?.name ?? 'Unknown'}"),
+
           trailing: widget.pc.port.isFree
               ? PopupMenuButton<dynamic>(
                   icon: const Icon(Icons.add_link, color: Colors.green),
@@ -264,7 +245,9 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
                           widget.connections.add(Connection(pcItem.id, routerItem.id));
                           widget.onConnectionsUpdated();
                         }
-                      } else if (target is SwitchDevice) {
+                      }
+                      
+                      else if (target is SwitchDevice) {
                         if (connectPCToSwitch(widget.pc, target)) {
                           final pcItem = widget.droppedItems.firstWhere((i) => i.pcConfig == widget.pc);
                           final swItem = widget.droppedItems.firstWhere((i) => i.switchConfig == target);
@@ -276,12 +259,8 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
                   },
                   itemBuilder: (context) {
                     return [
-                      ...availableRouters
-                          .where((r) => r.getFreePort() != null)
-                          .map((r) => PopupMenuItem(value: r, child: Text("[ROUTER] ${r.name}"))),
-                      ...availableSwitches
-                          .where((s) => s.getFreePort() != null)
-                          .map((s) => PopupMenuItem(value: s, child: Text("[SWITCH] ${s.name}"))),
+                      ...availableRouters.where((r) => r.getFreePort() != null).map((r) => PopupMenuItem(value: r, child: Text("[ROUTER] ${r.name}"))),
+                      ...availableSwitches.where((s) => s.getFreePort() != null).map((s) => PopupMenuItem(value: s, child: Text("[SWITCH] ${s.name}"))),
                     ];
                   },
                 )
@@ -293,38 +272,30 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
                       final sw = widget.pc.port.connectedSwitch;
 
                       if (router != null) {
-                        final routerPort = router.ports.firstWhere(
-                          (p) => p.connectedPC == widget.pc,
-                          orElse: () => router.ports.first,
-                        );
+                        final routerPort = router.ports.firstWhere((p) => p.connectedPC == widget.pc, orElse: () => router.ports.first);
                         widget.pc.port.disconnect();
                         routerPort.disconnect();
-
-                        final pcItem = widget.droppedItems.firstWhere((i) => i.pcConfig == widget.pc);
-                        final routerItem = widget.droppedItems.firstWhere((i) => i.routerConfig == router);
-                        widget.connections.removeWhere(
-                          (c) =>
-                              (c.fromId == pcItem.id && c.toId == routerItem.id) ||
-                              (c.fromId == routerItem.id && c.toId == pcItem.id),
-                        );
-                        widget.onConnectionsUpdated();
-                      } else if (sw != null) {
-                        final swPort = sw.ports.firstWhere(
-                          (p) => p.connectedPC == widget.pc,
-                          orElse: () => sw.ports.first,
-                        );
+                      }
+                      
+                      else if (sw != null) {
+                        final swPort = sw.ports.firstWhere((p) => p.connectedPC == widget.pc, orElse: () => sw.ports.first);
                         widget.pc.port.disconnect();
                         swPort.disconnect();
-
-                        final pcItem = widget.droppedItems.firstWhere((i) => i.pcConfig == widget.pc);
-                        final swItem = widget.droppedItems.firstWhere((i) => i.switchConfig == sw);
-                        widget.connections.removeWhere(
-                          (c) =>
-                              (c.fromId == pcItem.id && c.toId == swItem.id) ||
-                              (c.fromId == swItem.id && c.toId == pcItem.id),
-                        );
-                        widget.onConnectionsUpdated();
                       }
+
+
+                      final pcItem = widget.droppedItems.firstWhere((i) => i.pcConfig == widget.pc);
+                      if (router != null) {
+                        final routerItem = widget.droppedItems.firstWhere((i) => i.routerConfig == router);
+                        widget.connections.removeWhere((c) => (c.fromId == pcItem.id && c.toId == routerItem.id) || (c.fromId == routerItem.id && c.toId == pcItem.id));
+                      }
+                      
+                      else if (sw != null) {
+                        final swItem = widget.droppedItems.firstWhere((i) => i.switchConfig == sw);
+                        widget.connections.removeWhere((c) => (c.fromId == pcItem.id && c.toId == swItem.id) || (c.fromId == swItem.id && c.toId == pcItem.id));
+                      }
+
+                      widget.onConnectionsUpdated();
                     });
                   },
                 ),
@@ -333,9 +304,11 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
     );
   }
 
+
   Widget _buildConsoleUI() {
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           height: 200,
@@ -348,42 +321,70 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
             children: widget.pc.consoleHistory.map((line) {
               return Text(
                 line,
-                style: const TextStyle(color: Colors.green, fontFamily: "monospace"),
+                style: const TextStyle(
+                  color: Colors.green,
+                  fontFamily: "monospace",
+                  fontSize: 10,
+                ),
               );
             }).toList(),
           ),
         ),
         const SizedBox(height: 8),
+
+        Text(
+          widget.pc.console.getPrompt(),
+          style: const TextStyle(
+            color: Colors.green,
+            fontFamily: "monospace",
+            fontSize: 12,
+            fontWeight: FontWeight.bold
+          ),
+        ),
+        const SizedBox(height: 4),
+
+
         TextField(
           controller: _consoleController,
-          style: const TextStyle(color: Colors.white, fontFamily: "monospace"),
+          style: const TextStyle(
+            color: Colors.white,
+            fontFamily: "monospace",
+            fontSize: 10,
+          ),
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.black,
             border: const OutlineInputBorder(),
-            hintText: "Enter command...",
-            hintStyle: const TextStyle(color: Colors.grey),
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white),
-              onPressed: () {
-                final cmd = _consoleController.text.trim();
-                if (cmd.isEmpty) return;
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
 
-                setState(() {
-                  widget.pc.consoleHistory.add("> $cmd");
-                  final output = widget.pc.processCommand(cmd);
-                  if (output.isNotEmpty) {
-                    widget.pc.consoleHistory.add(output);
-                  }
-                  _consoleController.clear();
-                });
-              },
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.send, color: Colors.white, size: 18),
+              onPressed: () => _handleCommand(_consoleController.text),
             ),
+
+            hintText: "Enter command...",
+            hintStyle: const TextStyle(color: Colors.grey, fontSize: 10),
           ),
+          onSubmitted: (cmd) => _handleCommand(cmd),
         ),
       ],
     );
   }
+
+
+  void _handleCommand(String cmd) {
+    cmd = cmd.trim();
+    if (cmd.isEmpty) return;
+
+    setState(() {
+      widget.pc.consoleHistory.add("${widget.pc.console.getPrompt()} $cmd");
+      final output = widget.pc.console.processCommand(cmd);
+      if (output.isNotEmpty) widget.pc.consoleHistory.add(output);
+      _consoleController.clear();
+    });
+  }
+
 
   Widget _field(String label, TextEditingController controller, {bool readOnly = false}) {
     return Row(

@@ -1,14 +1,14 @@
-// project_workspace.dart
+
 import 'package:artisan/components/note_dialog.dart';
 import 'package:artisan/devices/ethernet_port.dart';
 import 'package:artisan/devices/pc_device.dart';
 import 'package:artisan/devices/router_device.dart';
 import 'package:artisan/devices/switch_device.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
+
 
 class ProjectWorkspacePage extends StatefulWidget {
   final String projectName;
@@ -18,6 +18,7 @@ class ProjectWorkspacePage extends StatefulWidget {
   @override
   State<ProjectWorkspacePage> createState() => _ProjectWorkspacePageState();
 }
+
 
 class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
   bool _isExpanded = false;
@@ -92,6 +93,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
               ),
             ),
 
+
             /*** TOOLBAR ROW ***/
             Container(
               color: const Color(0xFF2A2B38),
@@ -106,8 +108,6 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                 ],
               ),
             ),
-
-
 
 
             /*** WORKSPACE AREA ***/
@@ -193,7 +193,6 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                                     }
 
 
-
                                     /*** INSPECT TOOL - PC ***/
                                     else if (_selectedToolbar == "Inspect Tool" && item.label == "PC") {
                                       final updatedPC = await showDialog<PCDevice>(
@@ -223,6 +222,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                                       }
                                     }
 
+
                                     /*** INSPECT TOOL - ROUTER ***/
                                     else if (_selectedToolbar == "Inspect Tool" && item.label.contains("Router")) {
                                       final updatedRouter = await showDialog<RouterDevice>(
@@ -232,7 +232,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                                           onSave: (router) => Navigator.pop(ctx, router),
                                           droppedItems: droppedItems,
                                           connections: connections,
-                                          onConnectionsUpdated: () => setState(() {}), // => forces immediate redraw
+                                          onConnectionsUpdated: () => setState(() {}), 
                                         ),
                                       );
 
@@ -243,6 +243,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                                       }
                                     }
 
+
                                     /*** INSPECT TOOL - SWITCH ***/
                                     else if (_selectedToolbar == "Inspect Tool" && item.label.contains("Switch")) {
                                       final updatedSwitch = await showDialog<SwitchDevice>(
@@ -252,7 +253,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                                           onSave: (sw) => Navigator.pop(ctx, sw),
                                           droppedItems: droppedItems,
                                           connections: connections,
-                                          onConnectionsUpdated: () => setState(() {}), // redraw
+                                          onConnectionsUpdated: () => setState(() {}), 
                                         ),
                                       );
 
@@ -264,6 +265,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                                     }
 
                                   },
+
 
                                   /*** SELECT TOOL ***/
                                   child: _selectedToolbar == "Select Tool"
@@ -285,7 +287,6 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                 ),
               ),
             ),
-
 
 
             /*** BOTTOM BAR ***/
@@ -421,37 +422,30 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
   }
 
 
-    Widget _toolbarButton(String text) {
-      final bool isSelected = _selectedToolbar == text;
+  Widget _toolbarButton(String text) {
+    final bool isSelected = _selectedToolbar == text;
 
-      return TextButton(
-        onPressed: () {
-          setState(() {
-            _selectedToolbar = text;
-
-            if (text == "Add Note") {
-              droppedItems.add(
-                DroppedItem(
-                  label: "Note",
-                  iconCodePoint: Icons.note.codePoint,
-                  dx: 100, // default x position
-                  dy: 100, // default y position
-                ),
-              );
-            }
-          });
-        },
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isSelected ? Colors.purple : Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
+    return TextButton(
+      onPressed: () {
+        setState(() {
+          _selectedToolbar = text;
+          if (text == "Add Note") {
+            droppedItems.add(
+              DroppedItem(label: "Note", iconCodePoint: Icons.note.codePoint, dx: 100, dy: 100),
+            );
+          }
+        });
+      },
+      child: Text(
+        text,
+        style: TextStyle(
+          color: isSelected ? Colors.purple : Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
         ),
-      );
-    }
-
+      ),
+    );
+  }
 
 
   Widget _deviceItem(IconData icon, String label) {
@@ -465,19 +459,9 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
       },
       child: Column(
         children: [
-          Icon(
-            icon,
-            size: 40,
-            color: isSelected ? Colors.purple : Colors.white,
-          ),
+          Icon(icon, size: 40, color: isSelected ? Colors.purple : Colors.white),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.purple : Colors.white,
-              fontSize: 14,
-            ),
-          ),
+          Text(label, style: TextStyle(color: isSelected ? Colors.purple : Colors.white, fontSize: 14)),
         ],
       ),
     );
@@ -570,7 +554,7 @@ class DroppedItem {
 
   final PCDevice? pcConfig;
   final RouterDevice? routerConfig;
-  final SwitchDevice? switchConfig; // NEW
+  final SwitchDevice? switchConfig; 
   final String? noteTitle;
   final String? noteMessage;
 
@@ -582,7 +566,7 @@ class DroppedItem {
     required this.dy,
     this.pcConfig,
     this.routerConfig,
-    this.switchConfig, // NEW
+    this.switchConfig, 
     this.noteTitle,
     this.noteMessage,
   }) : id = id ?? const Uuid().v4();
@@ -596,7 +580,7 @@ class DroppedItem {
     double? dy,
     PCDevice? pcConfig,
     RouterDevice? routerConfig,
-    SwitchDevice? switchConfig, // NEW
+    SwitchDevice? switchConfig, 
     String? noteTitle,
     String? noteMessage,
   }) {
@@ -608,7 +592,7 @@ class DroppedItem {
       dy: dy ?? this.dy,
       pcConfig: pcConfig ?? this.pcConfig,
       routerConfig: routerConfig ?? this.routerConfig,
-      switchConfig: switchConfig ?? this.switchConfig, // NEW
+      switchConfig: switchConfig ?? this.switchConfig,  
       noteTitle: noteTitle ?? this.noteTitle,
       noteMessage: noteMessage ?? this.noteMessage,
     );
@@ -623,7 +607,7 @@ class DroppedItem {
       'dy': dy,
       'pcConfig': pcConfig?.toMap(),
       'routerConfig': routerConfig?.toMap(),
-      'switchConfig': switchConfig?.toMap(), // NEW
+      'switchConfig': switchConfig?.toMap(), 
       'noteTitle': noteTitle,
       'noteMessage': noteMessage,
     };
@@ -642,7 +626,7 @@ class DroppedItem {
       routerConfig: map['routerConfig'] != null
           ? RouterDevice.fromMap(Map<String, dynamic>.from(map['routerConfig']))
           : null,
-      switchConfig: map['switchConfig'] != null // NEW
+      switchConfig: map['switchConfig'] != null 
           ? SwitchDevice.fromMap(Map<String, dynamic>.from(map['switchConfig']))
           : null,
       noteTitle: map['noteTitle'] as String?,
@@ -650,7 +634,6 @@ class DroppedItem {
     );
   }
 }
-
 
 
 class _DragPayload {
@@ -667,6 +650,15 @@ class _DragPayload {
       : isNew = false,
         icon = null,
         label = null;
+}
+
+
+DroppedItem? safeFind(List<DroppedItem> items, String id) {
+  try {
+    return items.firstWhere((i) => i.id == id);
+  } catch (_) {
+    return null;
+  }
 }
 
 
@@ -783,15 +775,5 @@ void restoreConnections(List<DroppedItem> droppedItems, List<Connection> connect
     } else if (fromItem.switchConfig != null && toItem.switchConfig != null) {
       connectSwitchToSwitch(fromItem.switchConfig!, toItem.switchConfig!);
     }
-  }
-}
-
-
-
-DroppedItem? safeFind(List<DroppedItem> items, String id) {
-  try {
-    return items.firstWhere((i) => i.id == id);
-  } catch (_) {
-    return null;
   }
 }

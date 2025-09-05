@@ -2,22 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:artisan/devices/pc_device.dart';
 import 'package:artisan/devices/ethernet_port.dart';
 import 'package:artisan/devices/switch_device.dart';
+import 'package:artisan/devices/router_console.dart'; 
 import 'package:artisan/pages/project_workspace.dart';
 
 class RouterDevice {
   String name;
 
   final List<EthernetPort> ports = [
-    EthernetPort(id: "eth0"),
-    EthernetPort(id: "eth1")
+    EthernetPort(id: "fast0/0"),
+    EthernetPort(id: "fast0/1")
   ];
 
-  // Console state
+
+
   List<String> consoleHistory = [];
+  final List<RouteEntry> routingTable = [];
+
+
+  late RouterConsole console;
 
   RouterDevice({
     required this.name,
-  });
+  }) {
+    console = RouterConsole(this);
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -27,9 +35,12 @@ class RouterDevice {
   }
 
   factory RouterDevice.fromMap(Map<String, dynamic> map) {
-    return RouterDevice(
+    final router = RouterDevice(
       name: map['name'] ?? 'Router',
-    )..consoleHistory = List<String>.from(map['consoleHistory'] ?? []);
+    );
+    router.consoleHistory = List<String>.from(map['consoleHistory'] ?? []);
+    router.console = RouterConsole(router); 
+    return router;
   }
 
   EthernetPort? getFreePort() {
@@ -39,29 +50,22 @@ class RouterDevice {
       return null;
     }
   }
-
-  /// Process a command entered into the console
-  String processCommand(String input) {
-    if (input.trim().isEmpty) return "";
-    switch (input.toLowerCase()) {
-      case "show ip":
-        return "Router $name connections:\n${ports.map((p) => "${p.id}: ${p.connectedPC?.name ?? p.connectedRouter?.name ?? p.connectedSwitch?.name ?? '---'}").join("\n")}";
-      case "help":
-        return "Available commands:\n- show ip\n- help\n- clear";
-      case "clear":
-        consoleHistory.clear();
-        return "";
-      default:
-        return "Unknown command: $input";
-    }
-  }
 }
+
+
+class RouteEntry {
+  final String destination;
+  final String netmask;
+  final String gateway;
+
+  RouteEntry(this.destination, this.netmask, this.gateway);
+}
+
 
 class RouterConfigDialog extends StatefulWidget {
   final RouterDevice router;
   final void Function(RouterDevice router) onSave;
 
-  /* MANAGE WORKSPACE CONNECTIONS */
   final List<DroppedItem> droppedItems;
   final List<Connection> connections;
   final VoidCallback onConnectionsUpdated;
@@ -199,6 +203,7 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
   Widget _buildConsoleUI() {
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           height: 200,
@@ -211,42 +216,57 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
             children: widget.router.consoleHistory.map((line) {
               return Text(
                 line,
-                style: const TextStyle(color: Colors.green, fontFamily: "monospace"),
+                style: const TextStyle(
+                  color: Colors.green,
+                  fontFamily: "monospace",
+                  fontSize: 10,
+                ),
               );
             }).toList(),
           ),
         ),
         const SizedBox(height: 8),
+
+        Text(
+          widget.router.console.getPrompt(),
+          style: const TextStyle(
+            color: Colors.green,
+            fontFamily: "monospace",
+            fontSize: 12,
+            fontWeight: FontWeight.bold
+          ),
+        ),
+        const SizedBox(height: 4),
+
         TextField(
           controller: _consoleController,
-          style: const TextStyle(color: Colors.white, fontFamily: "monospace"),
+          style: const TextStyle(
+            color: Colors.white,
+            fontFamily: "monospace",
+            fontSize: 10,
+          ),
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.black,
             border: const OutlineInputBorder(),
-            hintText: "Enter command...",
-            hintStyle: const TextStyle(color: Colors.grey),
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white),
-              onPressed: () {
-                final cmd = _consoleController.text.trim();
-                if (cmd.isEmpty) return;
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
 
-                setState(() {
-                  widget.router.consoleHistory.add("> $cmd");
-                  final output = widget.router.processCommand(cmd);
-                  if (output.isNotEmpty) {
-                    widget.router.consoleHistory.add(output);
-                  }
-                  _consoleController.clear();
-                });
-              },
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.send, color: Colors.white, size: 18),
+              onPressed: () => _handleCommand(_consoleController.text),
             ),
+
+            hintText: "Enter command...",
+            hintStyle: const TextStyle(color: Colors.grey, fontSize: 10),
           ),
+          onSubmitted: (cmd) => _handleCommand(cmd),
         ),
       ],
     );
   }
+
+
 
   Widget _buildConnectionsUI() {
     final availablePCs = widget.droppedItems
@@ -281,6 +301,7 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
                     icon: const Icon(Icons.add_link, color: Colors.green),
                     onSelected: (target) {
                       setState(() {
+
                         if (target is PCDevice) {
                           if (connectPCToRouter(target, widget.router)) {
                             final pcItem = widget.droppedItems.firstWhere((i) => i.pcConfig == target);
@@ -288,14 +309,18 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
                             widget.connections.add(Connection(pcItem.id, routerItem.id));
                             widget.onConnectionsUpdated();
                           }
-                        } else if (target is RouterDevice) {
+                        }
+                        
+                        else if (target is RouterDevice) {
                           if (connectRouterToRouter(widget.router, target)) {
                             final r1 = widget.droppedItems.firstWhere((i) => i.routerConfig == widget.router);
                             final r2 = widget.droppedItems.firstWhere((i) => i.routerConfig == target);
                             widget.connections.add(Connection(r1.id, r2.id));
                             widget.onConnectionsUpdated();
                           }
-                        } else if (target is SwitchDevice) {
+                        }
+                        
+                        else if (target is SwitchDevice) {
                           if (connectRouterToSwitch(widget.router, target)) {
                             final rItem = widget.droppedItems.firstWhere((i) => i.routerConfig == widget.router);
                             final swItem = widget.droppedItems.firstWhere((i) => i.switchConfig == target);
@@ -303,6 +328,7 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
                             widget.onConnectionsUpdated();
                           }
                         }
+
                       });
                     },
                     itemBuilder: (context) {
@@ -330,7 +356,9 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
                           widget.connections.removeWhere((c) =>
                               (c.fromId == pcItem.id && c.toId == routerItem.id) ||
                               (c.fromId == routerItem.id && c.toId == pcItem.id));
-                        } else if (router != null) {
+                        }
+                        
+                        else if (router != null) {
                           final otherPort = router.ports.firstWhere(
                             (p) => p.connectedRouter == widget.router,
                             orElse: () => router.ports.first,
@@ -345,7 +373,9 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
                           widget.connections.removeWhere((c) =>
                               (c.fromId == r1.id && c.toId == r2.id) ||
                               (c.fromId == r2.id && c.toId == r1.id));
-                        } else if (sw != null) {
+                        }
+                        
+                        else if (sw != null) {
                           final otherPort = sw.ports.firstWhere(
                             (p) => p.connectedRouter == widget.router,
                             orElse: () => sw.ports.first,
@@ -372,8 +402,21 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
     );
   }
 
-  Widget _field(String label, TextEditingController controller,
-      {bool readOnly = false}) {
+
+  void _handleCommand(String cmd) {
+    cmd = cmd.trim();
+    if (cmd.isEmpty) return;
+
+    setState(() {
+      widget.router.consoleHistory.add("${widget.router.console.getPrompt()} $cmd");
+      final output = widget.router.console.processCommand(cmd);
+      if (output.isNotEmpty) { widget.router.consoleHistory.add(output); }
+      _consoleController.clear();
+    });
+  }
+
+
+  Widget _field(String label, TextEditingController controller, {bool readOnly = false}) {
     return Row(
       children: [
         SizedBox(width: 120, child: Text(label)),
@@ -383,8 +426,7 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
             readOnly: readOnly,
             decoration: InputDecoration(
               border: const OutlineInputBorder(),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               fillColor: readOnly ? Colors.grey.shade200 : null,
               filled: readOnly,
             ),

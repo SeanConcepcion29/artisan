@@ -1,3 +1,4 @@
+import 'package:artisan/devices/switch_console.dart';
 import 'package:flutter/material.dart';
 import 'package:artisan/devices/pc_device.dart';
 import 'package:artisan/devices/router_device.dart';
@@ -8,31 +9,24 @@ class SwitchDevice {
   String name;
 
   final List<EthernetPort> ports = [
-    EthernetPort(id: "eth0"),
-    EthernetPort(id: "eth1"),
-    EthernetPort(id: "eth2"),
-    EthernetPort(id: "eth3"),
+    EthernetPort(id: "eth0/0"),
+    EthernetPort(id: "eth0/1"),
+    EthernetPort(id: "eth0/2"),
+    EthernetPort(id: "eth0/3"),
+    EthernetPort(id: "fast0/0"),
+    EthernetPort(id: "fast0/1"),
   ];
 
-  // Console state
+
   List<String> consoleHistory = [];
+  late SwitchConsole console;
 
   SwitchDevice({
-    required this.name,
-  });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'name': name,
-      'consoleHistory': consoleHistory,
-    };
+    required this.name
+  }) {
+    console = SwitchConsole(this);
   }
 
-  factory SwitchDevice.fromMap(Map<String, dynamic> map) {
-    return SwitchDevice(
-      name: map['name'] ?? 'Switch',
-    )..consoleHistory = List<String>.from(map['consoleHistory'] ?? []);
-  }
 
   EthernetPort? getFreePort() {
     try {
@@ -42,25 +36,29 @@ class SwitchDevice {
     }
   }
 
-  /// Process commands for the Switch console
-  String processCommand(String input) {
-    if (input.trim().isEmpty) return "";
-    switch (input.toLowerCase()) {
-      case "show mac":
-        return "MAC Table (connected devices):\n" +
-            ports
-                .map((p) =>
-                    "${p.id}: ${p.connectedPC?.name ?? p.connectedRouter?.name ?? p.connectedSwitch?.name ?? '---'}")
-                .join("\n");
-      case "help":
-        return "Available commands:\n- show mac\n- help\n- clear";
-      case "clear":
-        consoleHistory.clear();
-        return "";
-      default:
-        return "Unknown command: $input";
+  EthernetPort? getPortById(String id) {
+    try {
+      return ports.firstWhere((p) => p.id == id);
+    } catch (e) {
+      return null;
     }
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'consoleHistory': consoleHistory,
+    };
+  }
+
+  factory SwitchDevice.fromMap(Map<String, dynamic> map) {
+    final sw = SwitchDevice(
+      name: map['name'] ?? 'Switch',
+    );
+    sw.consoleHistory = List<String>.from(map['consoleHistory'] ?? []);
+    return sw;
+  }
+
 }
 
 class SwitchConfigDialog extends StatefulWidget {
@@ -112,13 +110,12 @@ class _SwitchConfigDialogState extends State<SwitchConfigDialog> {
     super.dispose();
   }
 
-  bool get hasProperName => widget.sw.name != "Switch";
+  bool get hasValidName => widget.sw.name != "Switch";
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("Switch Options",
-          style: TextStyle(fontWeight: FontWeight.bold)),
+      title: const Text("Switch Options", style: TextStyle(fontWeight: FontWeight.bold)),
       content: SizedBox(
         width: 350,
         child: Column(
@@ -127,19 +124,9 @@ class _SwitchConfigDialogState extends State<SwitchConfigDialog> {
             if (!showConfig && !showConsole && !showConnections) ...[
               _menuButton("Configure", () => setState(() => showConfig = true)),
               const SizedBox(height: 8),
-              _menuButton(
-                "Console",
-                hasProperName ? () => setState(() => showConsole = true) : null,
-                enabled: hasProperName,
-              ),
+              _menuButton("Console", () => setState(() => showConsole = true), enabled: hasValidName),
               const SizedBox(height: 8),
-              _menuButton(
-                "Connections",
-                hasProperName
-                    ? () => setState(() => showConnections = true)
-                    : null,
-                enabled: hasProperName,
-              ),
+              _menuButton("Connections", () => setState(() => showConnections = true), enabled: hasValidName),
             ],
             if (showConfig) _buildConfigForm(),
             if (showConsole) _buildConsoleUI(),
@@ -155,17 +142,11 @@ class _SwitchConfigDialogState extends State<SwitchConfigDialog> {
               showConsole = false;
               showConnections = false;
             }),
-            child: const Text("Back",
-                style: TextStyle(
-                    color: Color.fromARGB(255, 34, 36, 49),
-                    fontWeight: FontWeight.bold)),
+            child: const Text("Back", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("Close",
-              style: TextStyle(
-                  color: Color.fromARGB(255, 34, 36, 49),
-                  fontWeight: FontWeight.bold)),
+          child: const Text("Close", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
         ),
       ],
     );
@@ -178,8 +159,7 @@ class _SwitchConfigDialogState extends State<SwitchConfigDialog> {
       child: ElevatedButton(
         onPressed: enabled ? onPressed : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor:
-              enabled ? const Color.fromARGB(255, 34, 36, 49) : Colors.grey,
+          backgroundColor: enabled ? const Color.fromARGB(255, 34, 36, 49) : Colors.grey,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: Text(text, style: const TextStyle(color: Colors.white)),
@@ -201,7 +181,7 @@ class _SwitchConfigDialogState extends State<SwitchConfigDialog> {
                 isNameEditable = false;
               }
             });
-            widget.onSave(widget.sw); // keep same object reference
+            widget.onSave(widget.sw); 
           },
           child: const Text("Apply"),
         ),
@@ -209,59 +189,71 @@ class _SwitchConfigDialogState extends State<SwitchConfigDialog> {
     );
   }
 
-  Widget _buildConsoleUI() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          height: 200,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: ListView(
-            children: widget.sw.consoleHistory.map((line) {
-              return Text(
-                line,
-                style: const TextStyle(
-                    color: Colors.green, fontFamily: "monospace"),
-              );
-            }).toList(),
-          ),
+Widget _buildConsoleUI() {
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Container(
+        height: 200,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(6),
         ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _consoleController,
-          style:
-              const TextStyle(color: Colors.white, fontFamily: "monospace"),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Colors.black,
-            border: const OutlineInputBorder(),
-            hintText: "Enter command...",
-            hintStyle: const TextStyle(color: Colors.grey),
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white),
-              onPressed: () {
-                final cmd = _consoleController.text.trim();
-                if (cmd.isEmpty) return;
+        child: ListView(
+          children: widget.sw.consoleHistory.map((line) {
+            return Text(
+              line,
+              style: const TextStyle(
+                color: Colors.green,
+                fontFamily: "monospace",
+                fontSize: 10,
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+      const SizedBox(height: 8),
 
-                setState(() {
-                  widget.sw.consoleHistory.add("> $cmd");
-                  final output = widget.sw.processCommand(cmd);
-                  if (output.isNotEmpty) {
-                    widget.sw.consoleHistory.add(output);
-                  }
-                  _consoleController.clear();
-                });
-              },
-            ),
-          ),
+      Text(
+        "${widget.sw.name}>", 
+        style: const TextStyle(
+          color: Colors.green,
+          fontFamily: "monospace",
+          fontSize: 12,
+          fontWeight: FontWeight.bold
         ),
-      ],
-    );
-  }
+      ),
+      const SizedBox(height: 4),
+
+      TextField(
+        controller: _consoleController,
+        style: const TextStyle(
+          color: Colors.white,
+          fontFamily: "monospace",
+          fontSize: 10,
+        ),
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.black,
+          border: const OutlineInputBorder(),
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          suffixIcon: IconButton(
+            icon: const Icon(Icons.send, color: Colors.white, size: 18),
+            onPressed: () => _handleCommand(_consoleController.text),
+          ),
+          hintText: "Enter command...",
+          hintStyle: const TextStyle(color: Colors.grey, fontSize: 10),
+        ),
+        onSubmitted: (cmd) => _handleCommand(cmd),
+      ),
+    ],
+  );
+}
+
+
 
   Widget _buildConnectionsUI() {
     final availablePCs = widget.droppedItems
@@ -275,8 +267,7 @@ class _SwitchConfigDialogState extends State<SwitchConfigDialog> {
         .toList();
 
     final availableSwitches = widget.droppedItems
-        .where((item) =>
-            item.switchConfig != null && item.switchConfig != widget.sw)
+        .where((item) => item.switchConfig != null && item.switchConfig != widget.sw)
         .map((i) => i.switchConfig!)
         .toList();
 
@@ -292,8 +283,7 @@ class _SwitchConfigDialogState extends State<SwitchConfigDialog> {
             title: Text(port.id),
             subtitle: port.isFree
                 ? const Text("Available")
-                : Text(
-                    "Connected to ${port.connectedPC?.name ?? port.connectedRouter?.name ?? port.connectedSwitch?.name ?? 'Unknown'}"),
+                : Text("Connected to ${port.connectedPC?.name ?? port.connectedRouter?.name ?? port.connectedSwitch?.name ?? 'Unknown'}"),
             trailing: port.isFree
                 ? PopupMenuButton<dynamic>(
                     icon: const Icon(Icons.add_link, color: Colors.green),
@@ -301,32 +291,27 @@ class _SwitchConfigDialogState extends State<SwitchConfigDialog> {
                       setState(() {
                         if (target is PCDevice) {
                           if (connectPCToSwitch(target, widget.sw)) {
-                            final pcItem = widget.droppedItems
-                                .firstWhere((i) => i.pcConfig == target);
-                            final swItem = widget.droppedItems
-                                .firstWhere((i) => i.switchConfig == widget.sw);
-                            widget.connections
-                                .add(Connection(pcItem.id, swItem.id));
+                            final pcItem = widget.droppedItems.firstWhere((i) => i.pcConfig == target);
+                            final swItem = widget.droppedItems.firstWhere((i) => i.switchConfig == widget.sw);
+                            widget.connections.add(Connection(pcItem.id, swItem.id));
                             widget.onConnectionsUpdated();
                           }
-                        } else if (target is RouterDevice) {
+                        }
+                        
+                        else if (target is RouterDevice) {
                           if (connectRouterToSwitch(target, widget.sw)) {
-                            final rItem = widget.droppedItems
-                                .firstWhere((i) => i.routerConfig == target);
-                            final swItem = widget.droppedItems
-                                .firstWhere((i) => i.switchConfig == widget.sw);
-                            widget.connections
-                                .add(Connection(rItem.id, swItem.id));
+                            final rItem = widget.droppedItems.firstWhere((i) => i.routerConfig == target);
+                            final swItem = widget.droppedItems.firstWhere((i) => i.switchConfig == widget.sw);
+                            widget.connections.add(Connection(rItem.id, swItem.id));
                             widget.onConnectionsUpdated();
                           }
-                        } else if (target is SwitchDevice) {
+                        }
+                        
+                        else if (target is SwitchDevice) {
                           if (connectSwitchToSwitch(widget.sw, target)) {
-                            final s1 = widget.droppedItems
-                                .firstWhere((i) => i.switchConfig == widget.sw);
-                            final s2 = widget.droppedItems
-                                .firstWhere((i) => i.switchConfig == target);
-                            widget.connections
-                                .add(Connection(s1.id, s2.id));
+                            final s1 = widget.droppedItems.firstWhere((i) => i.switchConfig == widget.sw);
+                            final s2 = widget.droppedItems.firstWhere((i) => i.switchConfig == target);
+                            widget.connections.add(Connection(s1.id, s2.id));
                             widget.onConnectionsUpdated();
                           }
                         }
@@ -336,16 +321,13 @@ class _SwitchConfigDialogState extends State<SwitchConfigDialog> {
                       return [
                         ...availablePCs
                             .where((pc) => pc.port.isFree)
-                            .map((pc) => PopupMenuItem(
-                                value: pc, child: Text("[PC] ${pc.name}"))),
+                            .map((pc) => PopupMenuItem(value: pc, child: Text("[PC] ${pc.name}"))),
                         ...availableRouters
                             .where((r) => r.getFreePort() != null)
-                            .map((r) => PopupMenuItem(
-                                value: r, child: Text("[ROUTER] ${r.name}"))),
+                            .map((r) => PopupMenuItem(value: r, child: Text("[ROUTER] ${r.name}"))),
                         ...availableSwitches
                             .where((s) => s.getFreePort() != null)
-                            .map((s) => PopupMenuItem(
-                                value: s, child: Text("[SWITCH] ${s.name}"))),
+                            .map((s) => PopupMenuItem(value: s, child: Text("[SWITCH] ${s.name}"))),
                       ];
                     },
                   )
@@ -360,14 +342,18 @@ class _SwitchConfigDialogState extends State<SwitchConfigDialog> {
                         if (pc != null) {
                           pc.port.disconnect();
                           port.disconnect();
-                        } else if (router != null) {
+                        }
+                        
+                        else if (router != null) {
                           final otherPort = router.ports.firstWhere(
                             (p) => p.connectedSwitch == widget.sw,
                             orElse: () => router.ports.first,
                           );
                           port.disconnect();
                           otherPort.disconnect();
-                        } else if (sw != null) {
+                        }
+                        
+                        else if (sw != null) {
                           final otherPort = sw.ports.firstWhere(
                             (p) => p.connectedSwitch == widget.sw,
                             orElse: () => sw.ports.first,
@@ -376,9 +362,7 @@ class _SwitchConfigDialogState extends State<SwitchConfigDialog> {
                           otherPort.disconnect();
                         }
 
-                        widget.connections.removeWhere((c) =>
-                            c.fromId == port.id || c.toId == port.id);
-
+                        widget.connections.removeWhere((c) => c.fromId == port.id || c.toId == port.id);
                         widget.onConnectionsUpdated();
                       });
                     },
@@ -388,6 +372,20 @@ class _SwitchConfigDialogState extends State<SwitchConfigDialog> {
       ],
     );
   }
+
+  
+  void _handleCommand(String cmd) {
+    cmd = cmd.trim();
+    if (cmd.isEmpty) return;
+
+    setState(() {
+      widget.sw.consoleHistory.add("${widget.sw.console.getPrompt()} $cmd");
+      final output = widget.sw.console.processCommand(cmd);
+      if (output.isNotEmpty) widget.sw.consoleHistory.add(output);
+      _consoleController.clear();
+    });
+  }
+
 
   Widget _field(String label, TextEditingController controller,
       {bool readOnly = false}) {
@@ -401,7 +399,7 @@ class _SwitchConfigDialogState extends State<SwitchConfigDialog> {
             decoration: InputDecoration(
               border: const OutlineInputBorder(),
               contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               fillColor: readOnly ? Colors.grey.shade200 : null,
               filled: readOnly,
             ),
