@@ -3,6 +3,7 @@ import 'package:artisan/components/note_dialog.dart';
 import 'package:artisan/devices/ethernet_port.dart';
 import 'package:artisan/devices/pc_device.dart';
 import 'package:artisan/devices/router_device.dart';
+import 'package:artisan/devices/switch_device.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -143,7 +144,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                         return Stack(
                             children: [
                               const Center(
-                                child: Text("Workspace Area", style: TextStyle(color: Colors.black54)),
+                                child: Text("Workspace Area", style: TextStyle(color: Color.fromARGB(70, 40, 40, 40))),
                               ),
 
                               /*** CONNECTION LINES ***/
@@ -223,26 +224,45 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                                     }
 
                                     /*** INSPECT TOOL - ROUTER ***/
-                                    else if (_selectedToolbar == "Inspect Tool" &&
-                                        item.label.contains("Router")) {
-                                          final updatedRouter = await showDialog<RouterDevice>(
-                                            context: context,
-                                            builder: (ctx) => RouterConfigDialog(
-                                              router: item.routerConfig ?? RouterDevice(name: "Router"),
-                                              onSave: (router) => Navigator.pop(ctx, router),
-                                              droppedItems: droppedItems,
-                                              connections: connections,
-                                              onConnectionsUpdated: () => setState(() {}), // => forces immediate redraw
-                                            ),
-                                          );
+                                    else if (_selectedToolbar == "Inspect Tool" && item.label.contains("Router")) {
+                                      final updatedRouter = await showDialog<RouterDevice>(
+                                        context: context,
+                                        builder: (ctx) => RouterConfigDialog(
+                                          router: item.routerConfig ?? RouterDevice(name: "Router"),
+                                          onSave: (router) => Navigator.pop(ctx, router),
+                                          droppedItems: droppedItems,
+                                          connections: connections,
+                                          onConnectionsUpdated: () => setState(() {}), // => forces immediate redraw
+                                        ),
+                                      );
 
-                                          if (updatedRouter != null) {
-                                            setState(() {
-                                              droppedItems[index] = droppedItems[index].copyWith(routerConfig: updatedRouter);
-                                            });
-                                          }
-
+                                      if (updatedRouter != null) {
+                                        setState(() {
+                                          droppedItems[index] = droppedItems[index].copyWith(routerConfig: updatedRouter);
+                                        });
+                                      }
                                     }
+
+                                    /*** INSPECT TOOL - SWITCH ***/
+                                    else if (_selectedToolbar == "Inspect Tool" && item.label.contains("Switch")) {
+                                      final updatedSwitch = await showDialog<SwitchDevice>(
+                                        context: context,
+                                        builder: (ctx) => SwitchConfigDialog(
+                                          sw: item.switchConfig ?? SwitchDevice(name: "Switch"),
+                                          onSave: (sw) => Navigator.pop(ctx, sw),
+                                          droppedItems: droppedItems,
+                                          connections: connections,
+                                          onConnectionsUpdated: () => setState(() {}), // redraw
+                                        ),
+                                      );
+
+                                      if (updatedSwitch != null) {
+                                        setState(() {
+                                          droppedItems[index] = droppedItems[index].copyWith(switchConfig: updatedSwitch);
+                                        });
+                                      }
+                                    }
+
                                   },
 
                                   /*** SELECT TOOL ***/
@@ -378,6 +398,10 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
 
                                           if (_selectedCategory == "Server") ...[
                                             _subOption(Icons.storage, "Server"),
+                                          ],
+
+                                          if (_selectedCategory == "Switch") ...[
+                                            _subOption(Icons.dns, "Switch"),
                                           ],
                                         ],
                                       ),
@@ -518,6 +542,11 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
           if (item.label.contains("Router") && item.routerConfig != null) ...[
             Text(item.routerConfig!.name, style: const TextStyle(color: Colors.greenAccent, fontSize: 10)),
           ],
+
+          if (item.label.contains("Switch") && item.switchConfig != null) ...[
+            Text(item.switchConfig!.name, style: const TextStyle(color: Colors.greenAccent, fontSize: 10)),
+          ],
+
         ],
       ),
     );
@@ -533,7 +562,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
 /// --------------------------------
 
 class DroppedItem {
-  final String id; // unique ID
+  final String id;
   final String label;
   final int iconCodePoint;
   final double dx;
@@ -541,8 +570,9 @@ class DroppedItem {
 
   final PCDevice? pcConfig;
   final RouterDevice? routerConfig;
-  final String? noteTitle;   // new
-  final String? noteMessage; // new
+  final SwitchDevice? switchConfig; // NEW
+  final String? noteTitle;
+  final String? noteMessage;
 
   DroppedItem({
     String? id,
@@ -552,6 +582,7 @@ class DroppedItem {
     required this.dy,
     this.pcConfig,
     this.routerConfig,
+    this.switchConfig, // NEW
     this.noteTitle,
     this.noteMessage,
   }) : id = id ?? const Uuid().v4();
@@ -565,6 +596,7 @@ class DroppedItem {
     double? dy,
     PCDevice? pcConfig,
     RouterDevice? routerConfig,
+    SwitchDevice? switchConfig, // NEW
     String? noteTitle,
     String? noteMessage,
   }) {
@@ -576,6 +608,7 @@ class DroppedItem {
       dy: dy ?? this.dy,
       pcConfig: pcConfig ?? this.pcConfig,
       routerConfig: routerConfig ?? this.routerConfig,
+      switchConfig: switchConfig ?? this.switchConfig, // NEW
       noteTitle: noteTitle ?? this.noteTitle,
       noteMessage: noteMessage ?? this.noteMessage,
     );
@@ -590,6 +623,7 @@ class DroppedItem {
       'dy': dy,
       'pcConfig': pcConfig?.toMap(),
       'routerConfig': routerConfig?.toMap(),
+      'switchConfig': switchConfig?.toMap(), // NEW
       'noteTitle': noteTitle,
       'noteMessage': noteMessage,
     };
@@ -607,6 +641,9 @@ class DroppedItem {
           : null,
       routerConfig: map['routerConfig'] != null
           ? RouterDevice.fromMap(Map<String, dynamic>.from(map['routerConfig']))
+          : null,
+      switchConfig: map['switchConfig'] != null // NEW
+          ? SwitchDevice.fromMap(Map<String, dynamic>.from(map['switchConfig']))
           : null,
       noteTitle: map['noteTitle'] as String?,
       noteMessage: map['noteMessage'] as String?,
@@ -729,11 +766,26 @@ void restoreConnections(List<DroppedItem> droppedItems, List<Connection> connect
 
     if (fromItem == null || toItem == null) continue;
 
-    if (fromItem.pcConfig != null && toItem.routerConfig != null) { connectPCToRouter(fromItem.pcConfig!, toItem.routerConfig!); }
-    else if (fromItem.routerConfig != null && toItem.pcConfig != null) { connectPCToRouter(toItem.pcConfig!, fromItem.routerConfig!); }
-    else if (fromItem.routerConfig != null && toItem.routerConfig != null) { connectRouterToRouter(fromItem.routerConfig!, toItem.routerConfig!); }
+    if (fromItem.pcConfig != null && toItem.routerConfig != null) {
+      connectPCToRouter(fromItem.pcConfig!, toItem.routerConfig!);
+    } else if (fromItem.routerConfig != null && toItem.pcConfig != null) {
+      connectPCToRouter(toItem.pcConfig!, fromItem.routerConfig!);
+    } else if (fromItem.routerConfig != null && toItem.routerConfig != null) {
+      connectRouterToRouter(fromItem.routerConfig!, toItem.routerConfig!);
+    } else if (fromItem.pcConfig != null && toItem.switchConfig != null) {
+      connectPCToSwitch(fromItem.pcConfig!, toItem.switchConfig!);
+    } else if (fromItem.switchConfig != null && toItem.pcConfig != null) {
+      connectPCToSwitch(toItem.pcConfig!, fromItem.switchConfig!);
+    } else if (fromItem.routerConfig != null && toItem.switchConfig != null) {
+      connectRouterToSwitch(fromItem.routerConfig!, toItem.switchConfig!);
+    } else if (fromItem.switchConfig != null && toItem.routerConfig != null) {
+      connectRouterToSwitch(toItem.routerConfig!, fromItem.switchConfig!);
+    } else if (fromItem.switchConfig != null && toItem.switchConfig != null) {
+      connectSwitchToSwitch(fromItem.switchConfig!, toItem.switchConfig!);
+    }
   }
 }
+
 
 
 DroppedItem? safeFind(List<DroppedItem> items, String id) {
