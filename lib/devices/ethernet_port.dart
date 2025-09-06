@@ -4,10 +4,12 @@ import 'package:artisan/devices/switch_device.dart';
 
 class EthernetPort {
   final String id;
+
   bool isFree = true;
+  bool isUp = false;
+  
   String? ipAddress;
   String? subnetMask;
-  bool isUp = false;
 
   PCDevice? connectedPC;
   RouterDevice? connectedRouter;

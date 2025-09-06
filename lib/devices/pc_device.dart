@@ -201,13 +201,60 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
     );
   }
 
-
   Widget _buildPingUI() {
-    return const Padding(
-      padding: EdgeInsets.all(8.0),
-      child: Text("Ping feature coming soon!", style: TextStyle(fontSize: 14, color: Colors.black54)),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 200,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: ListView(
+            children: widget.pc.consoleHistory
+                .where((line) => line.contains("ping") || line.contains("Reply") || line.contains("unreachable"))
+                .map((line) {
+              return Text(
+                line,
+                style: const TextStyle(
+                  color: Colors.green,
+                  fontFamily: "monospace",
+                  fontSize: 10,
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _consoleController,
+          style: const TextStyle(
+            color: Colors.white,
+            fontFamily: "monospace",
+            fontSize: 10,
+          ),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.black,
+            border: const OutlineInputBorder(),
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.send, color: Colors.white, size: 18),
+              onPressed: () => _handlePingCommand(_consoleController.text),
+            ),
+            hintText: "Enter ping command...",
+            hintStyle: const TextStyle(color: Colors.grey, fontSize: 10),
+          ),
+          onSubmitted: (cmd) => _handlePingCommand(cmd),
+        ),
+      ],
     );
   }
+
 
 
   Widget _buildConnectionsUI() {
@@ -374,6 +421,18 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
 
 
   void _handleCommand(String cmd) {
+    cmd = cmd.trim();
+    if (cmd.isEmpty) return;
+
+    setState(() {
+      widget.pc.consoleHistory.add("${widget.pc.console.getPrompt()} $cmd");
+      final output = widget.pc.console.processCommand(cmd);
+      if (output.isNotEmpty) widget.pc.consoleHistory.add(output);
+      _consoleController.clear();
+    });
+  }
+
+  void _handlePingCommand(String cmd) {
     cmd = cmd.trim();
     if (cmd.isEmpty) return;
 

@@ -27,6 +27,14 @@ class RouterDevice {
     console = RouterConsole(this);
   }
 
+  Map<String, dynamic> runningConfig = {
+    "interfaces": <String, Map<String, dynamic>>{},
+    "routes": <RouteEntry>[],
+  };
+
+  /// Saved config
+  Map<String, dynamic> startupConfig = {};
+
   Map<String, dynamic> toMap() {
     return {
       'name': name,
@@ -50,6 +58,34 @@ class RouterDevice {
       return null;
     }
   }
+
+    /// Apply interface configuration
+  void configureInterface(String id, String ip, String mask, {bool noShut = false}) {
+    final iface = ports.firstWhere((p) => p.id == id, orElse: () => throw Exception("No such interface"));
+    iface.assignIP(ip, mask);
+    if (noShut) iface.noShutdown();
+
+    runningConfig["interfaces"][id] = {
+      "ip": ip,
+      "mask": mask,
+      "up": iface.isUp,
+    };
+  }
+
+  /// Add static route
+  void addRoute(String dest, String mask, String gw) {
+    final entry = RouteEntry(dest, mask, gw);
+    routingTable.add(entry);
+
+    final routes = List<RouteEntry>.from(runningConfig["routes"]);
+    routes.add(entry);
+    runningConfig["routes"] = routes;
+  }
+
+  /// Save config
+  void saveConfig() {
+    startupConfig = Map.from(runningConfig);
+  }
 }
 
 
@@ -59,6 +95,9 @@ class RouteEntry {
   final String gateway;
 
   RouteEntry(this.destination, this.netmask, this.gateway);
+
+  @override
+  String toString() => "$destination $netmask via $gateway";
 }
 
 
@@ -434,5 +473,28 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
         ),
       ],
     );
+  }
+  
+}
+
+extension RouterPing on RouterDevice {
+  String handlePing(PCDevice source, String targetIP) {
+    // Check directly connected PCs
+    for (var p in ports) {
+      if (p.connectedPC != null && p.connectedPC!.ipAddress == targetIP) {
+        return "Reply from $targetIP: bytes=32 time<1ms TTL=64";
+      }
+    }
+
+    // Check directly connected router
+    for (var p in ports) {
+      if (p.connectedRouter != null) {
+        final result = p.connectedRouter!.handlePing(source, targetIP);
+        if (!result.contains("unreachable")) return result;
+      }
+    }
+
+    // TODO: check static routes if you have them
+    return "Destination host unreachable.";
   }
 }

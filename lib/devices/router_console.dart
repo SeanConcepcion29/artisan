@@ -68,8 +68,10 @@ class RouterConsole {
             args.length == 3 &&
             args[1] == "running-config" &&
             args[2] == "startup-config") {
-          return "Configuration saved.";
+          router.saveConfig();
+          return "Configuration saved to NVRAM.";
         }
+
 
         else if (cmd == "disable") {
           _mode = RouterMode.user;
