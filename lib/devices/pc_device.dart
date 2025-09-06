@@ -201,6 +201,7 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
     );
   }
 
+
   Widget _buildPingUI() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -215,7 +216,10 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
           ),
           child: ListView(
             children: widget.pc.consoleHistory
-                .where((line) => line.contains("ping") || line.contains("Reply") || line.contains("unreachable"))
+                .where((line) =>
+                    line.contains("ping") ||
+                    line.contains("Reply") ||
+                    line.contains("unreachable"))
                 .map((line) {
               return Text(
                 line,
@@ -241,19 +245,42 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
             fillColor: Colors.black,
             border: const OutlineInputBorder(),
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white, size: 18),
-              onPressed: () => _handlePingCommand(_consoleController.text),
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            suffixIcon: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                backgroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              child: const Text(
+                "PING",
+                style: TextStyle(fontSize: 10, fontFamily: "monospace", fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              onPressed: () {
+                final ip = _consoleController.text.trim();
+                if (ip.isNotEmpty) {
+                  _handlePingCommand("ping $ip");
+                  _consoleController.clear();
+                }
+              },
             ),
-            hintText: "Enter ping command...",
+            hintText: "Enter IP address...",
             hintStyle: const TextStyle(color: Colors.grey, fontSize: 10),
           ),
-          onSubmitted: (cmd) => _handlePingCommand(cmd),
+          onSubmitted: (ip) {
+            if (ip.trim().isNotEmpty) {
+              _handlePingCommand("ping $ip");
+              _consoleController.clear();
+            }
+          },
         ),
       ],
     );
   }
+
 
 
 

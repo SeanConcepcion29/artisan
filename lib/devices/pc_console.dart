@@ -22,34 +22,24 @@ class PCConsole {
   }
 
   String _ping(String targetIP) {
-    // same IP? skip
     if (targetIP == pc.ipAddress) {
       return "Cannot ping self.";
     }
 
-    // check same subnet
-    if (_sameSubnet(pc.ipAddress, targetIP, pc.subnetMask)) {
-      final reachable = _traverseNetwork(pc.port, targetIP, {});
-      if (reachable) {
-        return "Reply from $targetIP: bytes=32 time<1ms TTL=64";
-      } else {
-        return "Destination host unreachable.";
-      }
-    }
+    const int initialTTL = 5; // Only allow 5 hops
+    final result = _traverseNetwork(pc.port, targetIP, {}, initialTTL);
 
-    // if not same subnet, forward to default gateway
-    if (pc.defaultGateway.isNotEmpty && pc.defaultGateway != "0.0.0.0") {
-      final reachable = _traverseNetwork(pc.port, targetIP, {});
-      if (reachable) {
-        return "Reply from $targetIP: bytes=32 time<1ms TTL=64";
-      } else {
-        return "Destination host unreachable.";
-      }
+    if (result == PingResult.reachable) {
+      return "Reply from $targetIP: bytes=32 time<1ms TTL=$initialTTL";
+    } else if (result == PingResult.ttlExpired) {
+      return "Request timed out. (TTL expired)";
+    } else {
+      return "Destination host unreachable.";
     }
-
-    return "No route to host.";
   }
 }
+
+enum PingResult { reachable, unreachable, ttlExpired }
 
 bool _sameSubnet(String ip1, String ip2, String mask) {
   int ip1Int = _ipToInt(ip1);
@@ -61,46 +51,58 @@ bool _sameSubnet(String ip1, String ip2, String mask) {
 int _ipToInt(String ip) {
   final parts = ip.split(".").map(int.parse).toList();
   return (parts[0] << 24) |
-         (parts[1] << 16) |
-         (parts[2] << 8)  |
-         (parts[3]);
+      (parts[1] << 16) |
+      (parts[2] << 8) |
+      (parts[3]);
 }
 
-bool _traverseNetwork(EthernetPort start, String targetIP, Set<EthernetPort> visited) {
-  if (visited.contains(start)) return false;
+PingResult _traverseNetwork(
+    EthernetPort start, String targetIP, Set<EthernetPort> visited, int ttl) {
+  if (ttl <= 0) return PingResult.ttlExpired;
+  if (visited.contains(start)) return PingResult.unreachable;
   visited.add(start);
 
   // direct match on this port
-  if (start.ipAddress == targetIP && start.isUp) return true;
+  if (start.ipAddress == targetIP && start.isUp) {
+    return PingResult.reachable;
+  }
 
   // connected PC
   if (start.connectedPC != null) {
-    if (start.connectedPC!.ipAddress == targetIP) return true;
-    if (_traverseNetwork(start.connectedPC!.port, targetIP, visited)) return true;
+    if (start.connectedPC!.ipAddress == targetIP) {
+      return PingResult.reachable;
+    }
+    final res =
+        _traverseNetwork(start.connectedPC!.port, targetIP, visited, ttl);
+    if (res != PingResult.unreachable) return res;
   }
 
-  // connected Router (respect interfaces + static routes)
+  // connected Router
   if (start.connectedRouter != null) {
     final router = start.connectedRouter!;
 
-    // 1) check directly connected ports on the router (hosts directly attached)
+    // 1) check directly connected ports
     for (final p in router.ports) {
       if (p.isUp) {
-        if (p.ipAddress == targetIP) return true;
-        if (p.connectedPC != null && p.connectedPC!.ipAddress == targetIP) return true;
-      }
-    }
-
-    // 2) try interface-based forwarding (if router has an interface in same subnet as target)
-    for (final p in router.ports) {
-      if (p.isUp && p.ipAddress != null && p.subnetMask != null) {
-        if (_sameSubnet(p.ipAddress!, targetIP, p.subnetMask!)) {
-          if (_traverseNetwork(p, targetIP, visited)) return true;
+        if (p.ipAddress == targetIP) return PingResult.reachable;
+        if (p.connectedPC != null && p.connectedPC!.ipAddress == targetIP) {
+          return PingResult.reachable;
         }
       }
     }
 
-    // 3) respect static routes: find a router port that can reach the next-hop gateway
+    // 2) interface-based forwarding
+    for (final p in router.ports) {
+      if (p.isUp && p.ipAddress != null && p.subnetMask != null) {
+        if (_sameSubnet(p.ipAddress!, targetIP, p.subnetMask!)) {
+          final res =
+              _traverseNetwork(p, targetIP, visited, ttl - 1); // TTL dec here
+          if (res != PingResult.unreachable) return res;
+        }
+      }
+    }
+
+    // 3) static routes
     for (final route in router.routingTable) {
       if (_sameSubnet(targetIP, route.destination, route.netmask)) {
         EthernetPort? gwPort;
@@ -113,19 +115,24 @@ bool _traverseNetwork(EthernetPort start, String targetIP, Set<EthernetPort> vis
             break;
           }
         }
-        if (gwPort != null && _traverseNetwork(gwPort, targetIP, visited)) return true;
+        if (gwPort != null) {
+          final res =
+              _traverseNetwork(gwPort, targetIP, visited, ttl - 1); // TTL dec
+          if (res != PingResult.unreachable) return res;
+        }
       }
     }
   }
 
-  // connected Switch (flood)
+  // connected Switch (no TTL decrement)
   if (start.connectedSwitch != null) {
     for (final p in start.connectedSwitch!.ports) {
-      if (p.isUp && _traverseNetwork(p, targetIP, visited)) return true;
+      if (p.isUp) {
+        final res = _traverseNetwork(p, targetIP, visited, ttl);
+        if (res != PingResult.unreachable) return res;
+      }
     }
   }
 
-  return false;
+  return PingResult.unreachable;
 }
-
-
