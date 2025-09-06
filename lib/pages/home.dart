@@ -192,31 +192,137 @@ class _HomePageState extends State<HomePage> {
                           },
                         )
                       : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          itemCount: projectsToShow.length,
-                          itemBuilder: (context, index) {
-                            final project = projectsToShow[index];
-                            final projectName = project['title'] ?? "Untitled Project";
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        itemCount: _selectedIndex == 1 
+                            ? projectsToShow.length // ✅ no extra card in shared tab
+                            : projectsToShow.length + 1, // ✅ add extra card only in own projects tab
+                        itemBuilder: (context, index) {
+                          if (_selectedIndex != 1 && index == projectsToShow.length) {
 
-                            return InkWell(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ProjectWorkspacePage(projectName: projectName),
+                            // 👇 Last card: Create New Project
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+    
+                              child: InkWell(
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      final TextEditingController _nameController = TextEditingController();
+                                      final _formKey = GlobalKey<FormState>();
+
+                                      return AlertDialog(
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        title: const Text("Create New Project"),
+                                        content: Form(
+                                          key: _formKey,
+                                          child: TextFormField(
+                                            controller: _nameController,
+                                            decoration: const InputDecoration(
+                                              labelText: "Project Name",
+                                              border: OutlineInputBorder(),
+                                            ),
+                                            validator: (value) {
+                                              if (value == null || value.trim().isEmpty) {
+                                                return "Project name is required";
+                                              }
+                                              return null;
+                                            },
+                                          ),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context),
+                                            child: const Text("Cancel"),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () async {
+                                              if (_formKey.currentState!.validate()) {
+                                                final newProjectId = FirebaseFirestore.instance
+                                                    .collection('projects')
+                                                    .doc()
+                                                    .id; // generate unique projectId
+                                                final now = DateTime.now();
+
+                                                await firestoreProjects.createProject(
+                                                  email: userData!['email'],
+                                                  owner: userData!['email'],
+                                                  projectId: newProjectId,
+                                                  title: _nameController.text.trim(),
+                                                  dateCreated: now,
+                                                  dateModified: now,
+                                                  public: true,
+                                                  solo: true,
+                                                  collabs: [],
+                                                  downloads: 0,
+                                                  likes: 0,
+                                                );
+
+                                                fetchUserAndProjects();
+                                                Navigator.pop(context);
+                                              }
+                                            },
+                                            child: const Text("Create"),
+                                          ),
+
+                                        ],
+                                      );
+                                    },
+                                  );
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center, // ✅ Center content horizontally
+                                    children: const [
+                                      Icon(Icons.add, size: 28, color: Color(0xFF1E1F2A)),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        "Create New Project",
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF1E1F2A),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                );
-                              },
-                              child: _selectedIndex == 1
-                                  ? SharedProjectCard(
-                                      projectId: project['id'],   // 👈 make sure `id` exists in project map
-                                      userEmail: userData!['email'],
-                                      project: project,
-                                    )
-                                  : ProjectCard(project: project),
+                                ),
+
+                              ),
                             );
-                          },
-                        ),
+                          }
+
+                          // 👇 Normal project cards
+                          final project = projectsToShow[index];
+                          final projectName = project['title'] ?? "Untitled Project";
+                          final projectId = project['id'] ?? "unknown_id";
+
+                          return InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ProjectWorkspacePage(projectName: projectName, projectId: projectId),
+                                ),
+                              );
+                            },
+                            child: _selectedIndex == 1
+                                ? SharedProjectCard(
+                                    projectId: project['id'],
+                                    userEmail: userData!['email'],
+                                    project: project,
+                                  )
+                                : ProjectCard(project: project),
+                          );
+                        },
+                      )
+
             ),
 
 

@@ -7,12 +7,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
-
+import 'package:artisan/services/firestore_project.dart';
 
 class ProjectWorkspacePage extends StatefulWidget {
   final String projectName;
+  final String projectId;
 
-  const ProjectWorkspacePage({super.key, required this.projectName});
+  const ProjectWorkspacePage({super.key, required this.projectName, required this.projectId});
 
   @override
   State<ProjectWorkspacePage> createState() => _ProjectWorkspacePageState();
@@ -34,7 +35,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
   }
 
   Future<void> _loadWorkspace() async {
-    final workspace = await loadWorkspace(widget.projectName);
+    final workspace = await loadWorkspace(widget.projectId);
     setState(() {
       droppedItems = workspace.items;
       connections = workspace.connections;
@@ -79,7 +80,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                       const SizedBox(width: 16),
                       GestureDetector(
                         onTap: () async {
-                          await saveWorkspace(widget.projectName, droppedItems, connections);
+                          await saveWorkspace(widget.projectId, droppedItems, connections);
                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Workspace saved!")));
                         },
                         child: const Icon(Icons.save, color: Colors.white),
@@ -166,12 +167,12 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                                     /*** DELETE TOOL ***/
                                     if (_selectedToolbar == "Delete") {
                                       final removed = droppedItems.removeAt(index);
-
-                                      /* remove any connections tied to removed item */
                                       connections.removeWhere((c) => c.fromId == removed.id || c.toId == removed.id);
                                       setState(() {});
                                     }
 
+
+                                    /*** INSPECT TOOL - NOTE ***/
                                     else if (_selectedToolbar == "Inspect Tool" && item.label == "Note") {
                                       final updatedNote = await showDialog<Map<String, String>>(
                                         context: context,
@@ -302,17 +303,6 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
 
-                        /*** PLAY AND REPLAY BAR ***/
-                        Container(
-                          decoration: BoxDecoration(color: const Color(0xFF2A2B38), borderRadius: BorderRadius.circular(8)),
-                          child: Row(
-                            children: [
-                              IconButton(onPressed: () {}, icon: const Icon(Icons.replay, color: Colors.white)),
-                              IconButton(onPressed: () {}, icon: const Icon(Icons.play_arrow, color: Colors.white)),
-                            ],
-                          ),
-                        ),
-
                         /*** EXPAND BUTTON ***/
                         Container(
                           decoration: BoxDecoration(color: const Color(0xFF2A2B38), borderRadius: BorderRadius.circular(8)),
@@ -374,10 +364,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                             Expanded(
                               flex: 3,
                               child: Container(
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF2A2B38),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
+                                decoration: BoxDecoration(color: const Color(0xFF2A2B38), borderRadius: BorderRadius.circular(8)),
                                 padding: const EdgeInsets.all(12),
                                 child: _selectedCategory == null
                                     ? const Center(child: Text("Select a device", style: TextStyle(color: Colors.white54)))
@@ -386,23 +373,10 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                                         children: [
                                           Text(_selectedCategory!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
                                           const SizedBox(height: 12),
-
-                                          if (_selectedCategory == "Router") ...[
-                                            _subOption(Icons.router, "Router 1841"),
-                                            _subOption(Icons.router, "Router 2811"),
-                                          ],
-
-                                          if (_selectedCategory == "PC") ...[
-                                            _subOption(Icons.computer, "PC"),
-                                          ],
-
-                                          if (_selectedCategory == "Server") ...[
-                                            _subOption(Icons.storage, "Server"),
-                                          ],
-
-                                          if (_selectedCategory == "Switch") ...[
-                                            _subOption(Icons.dns, "Switch"),
-                                          ],
+                                          if (_selectedCategory == "Router") ...[_subOption(Icons.router, "Router")],
+                                          if (_selectedCategory == "PC") ...[ _subOption(Icons.computer, "PC")],
+                                          if (_selectedCategory == "Server") ...[_subOption(Icons.storage, "Server")],
+                                          if (_selectedCategory == "Switch") ...[_subOption(Icons.dns, "Switch")],
                                         ],
                                       ),
                               ),
@@ -428,20 +402,12 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
       onPressed: () {
         setState(() {
           _selectedToolbar = text;
-          if (text == "Add Note") {
-            droppedItems.add(
-              DroppedItem(label: "Note", iconCodePoint: Icons.note.codePoint, dx: 100, dy: 100),
-            );
-          }
+          if (text == "Add Note") { droppedItems.add(DroppedItem(label: "Note", iconCodePoint: Icons.note.codePoint, dx: 100, dy: 100)); }
         });
       },
       child: Text(
         text,
-        style: TextStyle(
-          color: isSelected ? Colors.purple : Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-        ),
+        style: TextStyle(color: isSelected ? Colors.purple : Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
       ),
     );
   }
@@ -451,11 +417,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
     final bool isSelected = _selectedCategory == label;
 
     return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedCategory = label;
-        });
-      },
+      onTap: () { setState(() { _selectedCategory = label; }); },
       child: Column(
         children: [
           Icon(icon, size: 40, color: isSelected ? Colors.purple : Colors.white),
@@ -470,10 +432,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
   Widget _subOption(IconData icon, String name) {
     return Draggable<_DragPayload>(
       data: _DragPayload.newItem(icon, name),
-      feedback: _workspaceItem(
-        DroppedItem(label: name, iconCodePoint: icon.codePoint, dx: 0, dy: 0),
-        isDragging: true,
-      ),
+      feedback: _workspaceItem(DroppedItem(label: name, iconCodePoint: icon.codePoint, dx: 0, dy: 0), isDragging: true),
       child: Row(
         children: [
           Icon(icon, size: 32, color: Colors.white),
@@ -500,16 +459,16 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
           Icon(
             item.icon,
             color: item.label == "Note" ? const Color.fromARGB(153, 255, 235, 59) : Colors.white,
-            size: item.label == "Note" ? 32 : 48,
+            size: item.label == "Note" ? 28 : 44,
           ),
 
           SizedBox(
-            width: 50, 
+            width: 70, 
             child: Text(
               displayText,
               style: TextStyle(
                 color: item.label == "Note" ? const Color.fromARGB(153, 255, 235, 59) : Colors.white,
-                fontSize: item.label == "Note" ? 10 : 12,
+                fontSize: item.label == "Note" ? 9 : 10,
                 fontWeight: item.label == "Note" ? FontWeight.bold : FontWeight.normal,
               ),
               overflow: TextOverflow.ellipsis,
@@ -519,15 +478,15 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
           ),
 
           if (item.label == "PC" && item.pcConfig != null) ...[
-            Text(item.pcConfig!.name, style: const TextStyle(color: Colors.greenAccent, fontSize: 10)),
+            Text(item.pcConfig!.name, style: const TextStyle(color: Colors.greenAccent, fontSize: 9)),
           ],
 
           if (item.label.contains("Router") && item.routerConfig != null) ...[
-            Text(item.routerConfig!.name, style: const TextStyle(color: Colors.greenAccent, fontSize: 10)),
+            Text(item.routerConfig!.name, style: const TextStyle(color: Colors.greenAccent, fontSize: 9)),
           ],
 
           if (item.label.contains("Switch") && item.switchConfig != null) ...[
-            Text(item.switchConfig!.name, style: const TextStyle(color: Colors.greenAccent, fontSize: 10)),
+            Text(item.switchConfig!.name, style: const TextStyle(color: Colors.greenAccent, fontSize: 9)),
           ],
 
         ],
@@ -722,8 +681,10 @@ class WorkspaceData {
 }
 
 
-Future<void> saveWorkspace(String projectName, List<DroppedItem> items, List<Connection> connections) async {
-  final ref = FirebaseFirestore.instance.collection('workspaces').doc(projectName);
+Future<void> saveWorkspace(String projectId, List<DroppedItem> items, List<Connection> connections) async {
+  final ref = FirebaseFirestore.instance.collection('workspaces').doc(projectId);
+  final firestoreProjects = FirestoreProjects();
+  await firestoreProjects.updateDateModified(projectId);
   await ref.set({
     'items': items.map((e) => e.toMap()).toList(),
     'connections': connections.map((c) => c.toMap()).toList(),
@@ -731,8 +692,8 @@ Future<void> saveWorkspace(String projectName, List<DroppedItem> items, List<Con
 }
 
 
-Future<WorkspaceData> loadWorkspace(String projectName) async {
-  final ref = FirebaseFirestore.instance.collection('workspaces').doc(projectName);
+Future<WorkspaceData> loadWorkspace(String projectId) async {
+  final ref = FirebaseFirestore.instance.collection('workspaces').doc(projectId);
   final snap = await ref.get();
 
   if (!snap.exists) return WorkspaceData(items: [], connections: []);

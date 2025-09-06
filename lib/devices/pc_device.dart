@@ -53,7 +53,6 @@ class PCDevice {
 
     return pc;
   }
-
 }
 
 
@@ -253,8 +252,7 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
             fillColor: Colors.black,
             border: const OutlineInputBorder(),
             isDense: true,
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
             suffixIcon: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -263,10 +261,7 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
-              child: const Text(
-                "PING",
-                style: TextStyle(fontSize: 10, fontFamily: "monospace", fontWeight: FontWeight.bold, color: Colors.white),
-              ),
+              child: const Text("PING", style: TextStyle(fontSize: 10, fontFamily: "monospace", fontWeight: FontWeight.bold, color: Colors.white)),
               onPressed: () {
                 final ip = _consoleController.text.trim();
                 if (ip.isNotEmpty) {

@@ -58,4 +58,12 @@ class FirestoreProjects {
             })
         .toList();
   }
+
+  // UPDATE DATE MODIFIED TO CURRENT DATE
+  Future<void> updateDateModified(String docId) async {
+    final now = DateTime.now();
+    await projectsCollection.doc(docId).update({
+      'datemodified': Timestamp.fromDate(now),
+    });
+  }
 }
