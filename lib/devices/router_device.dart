@@ -39,6 +39,13 @@ class RouterDevice {
     return {
       'name': name,
       'consoleHistory': consoleHistory,
+      'ports': ports.map((p) => p.toMap()).toList(),
+      'routingTable': routingTable.map((r) => r.toMap()).toList(),
+      'runningConfig': {
+        'interfaces': (runningConfig["interfaces"] as Map).map((k, v) => MapEntry(k, Map<String, dynamic>.from(v))),
+        'routes': routingTable.map((r) => r.toMap()).toList(),
+      },
+      'startupConfig': startupConfig,
     };
   }
 
@@ -46,10 +53,35 @@ class RouterDevice {
     final router = RouterDevice(
       name: map['name'] ?? 'Router',
     );
+
     router.consoleHistory = List<String>.from(map['consoleHistory'] ?? []);
-    router.console = RouterConsole(router); 
+
+    if (map['ports'] != null) {
+      final portList = (map['ports'] as List)
+          .map((p) => EthernetPort.fromMap(Map<String, dynamic>.from(p)))
+          .toList();
+      router.ports.clear();
+      router.ports.addAll(portList);
+    }
+
+    if (map['routingTable'] != null) {
+      for (var r in (map['routingTable'] as List)) {
+        router.routingTable.add(RouteEntry.fromMap(Map<String, dynamic>.from(r)));
+      }
+    }
+
+    if (map['runningConfig'] != null) {
+      router.runningConfig = Map<String, dynamic>.from(map['runningConfig']);
+    }
+
+    if (map['startupConfig'] != null) {
+      router.startupConfig = Map<String, dynamic>.from(map['startupConfig']);
+    }
+
+    router.console = RouterConsole(router);
     return router;
   }
+
 
   EthernetPort? getFreePort() {
     try {
@@ -96,9 +128,26 @@ class RouteEntry {
 
   RouteEntry(this.destination, this.netmask, this.gateway);
 
+  Map<String, dynamic> toMap() {
+    return {
+      'destination': destination,
+      'netmask': netmask,
+      'gateway': gateway,
+    };
+  }
+
+  factory RouteEntry.fromMap(Map<String, dynamic> map) {
+    return RouteEntry(
+      map['destination'] ?? '0.0.0.0',
+      map['netmask'] ?? '255.255.255.0',
+      map['gateway'] ?? '0.0.0.0',
+    );
+  }
+
   @override
   String toString() => "$destination $netmask via $gateway";
 }
+
 
 
 class RouterConfigDialog extends StatefulWidget {

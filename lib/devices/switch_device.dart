@@ -48,16 +48,27 @@ class SwitchDevice {
     return {
       'name': name,
       'consoleHistory': consoleHistory,
+      'ports': ports.map((p) => p.toMap()).toList(), // save port states
     };
   }
+
 
   factory SwitchDevice.fromMap(Map<String, dynamic> map) {
     final sw = SwitchDevice(
       name: map['name'] ?? 'Switch',
     );
     sw.consoleHistory = List<String>.from(map['consoleHistory'] ?? []);
+
+    if (map['ports'] != null) {
+      final savedPorts = List<Map<String, dynamic>>.from(map['ports']);
+      for (var i = 0; i < sw.ports.length && i < savedPorts.length; i++) {
+        sw.ports[i].applyFromMap(savedPorts[i]); // restore each port
+      }
+    }
+
     return sw;
   }
+
 
 }
 

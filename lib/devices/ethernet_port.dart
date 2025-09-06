@@ -37,6 +37,31 @@ class EthernetPort {
     isFree = true;
     isUp = false;
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'isFree': isFree,
+      'isUp': isUp,
+      'ipAddress': ipAddress,
+      'subnetMask': subnetMask,
+    };
+  }
+
+  factory EthernetPort.fromMap(Map<String, dynamic> map) {
+    final port = EthernetPort(id: map['id']);
+    port.isFree = map['isFree'] ?? true;
+    port.isUp = map['isUp'] ?? false;
+    port.ipAddress = map['ipAddress'];
+    port.subnetMask = map['subnetMask'];
+    return port;
+  }
+
+  void applyFromMap(Map<String, dynamic> map) {
+    isUp = map['isUp'] ?? false;
+    ipAddress = map['ipAddress'];
+    subnetMask = map['subnetMask'];
+  }
 }
 
 /*** CONNECT PC TO ROUTER ***/

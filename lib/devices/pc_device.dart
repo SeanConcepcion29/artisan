@@ -33,6 +33,7 @@ class PCDevice {
       'subnetMask': subnetMask,
       'defaultGateway': defaultGateway,
       'consoleHistory': consoleHistory,
+      'port': port.toMap(),  // include port state
     };
   }
 
@@ -43,9 +44,16 @@ class PCDevice {
       subnetMask: map['subnetMask'] ?? '255.255.255.0',
       defaultGateway: map['defaultGateway'] ?? '0.0.0.0',
     );
+
     pc.consoleHistory = List<String>.from(map['consoleHistory'] ?? []);
+
+    if (map['port'] != null) {
+      pc.port.applyFromMap(Map<String, dynamic>.from(map['port']));
+    }
+
     return pc;
   }
+
 }
 
 
