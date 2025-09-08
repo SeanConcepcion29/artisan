@@ -1,3 +1,4 @@
+/*
 import 'package:flutter/material.dart';
 import 'package:artisan/devices/pc_device.dart';
 import 'package:artisan/devices/ethernet_port.dart';
@@ -39,12 +40,6 @@ class RouterDevice {
     return {
       'name': name,
       'consoleHistory': consoleHistory,
-      'routingTable': routingTable.map((r) => r.toMap()).toList(),
-      'runningConfig': {
-        'interfaces': (runningConfig["interfaces"] as Map).map((k, v) => MapEntry(k, Map<String, dynamic>.from(v))),
-        'routes': routingTable.map((r) => r.toMap()).toList(),
-      },
-      'startupConfig': startupConfig,
     };
   }
 
@@ -52,27 +47,10 @@ class RouterDevice {
     final router = RouterDevice(
       name: map['name'] ?? 'Router',
     );
-
     router.consoleHistory = List<String>.from(map['consoleHistory'] ?? []);
-
-    if (map['routingTable'] != null) {
-      for (var r in (map['routingTable'] as List)) {
-        router.routingTable.add(RouteEntry.fromMap(Map<String, dynamic>.from(r)));
-      }
-    }
-
-    if (map['runningConfig'] != null) {
-      router.runningConfig = Map<String, dynamic>.from(map['runningConfig']);
-    }
-
-    if (map['startupConfig'] != null) {
-      router.startupConfig = Map<String, dynamic>.from(map['startupConfig']);
-    }
-
-    router.console = RouterConsole(router);
+    router.console = RouterConsole(router); 
     return router;
   }
-
 
   EthernetPort? getFreePort() {
     try {
@@ -119,26 +97,9 @@ class RouteEntry {
 
   RouteEntry(this.destination, this.netmask, this.gateway);
 
-  Map<String, dynamic> toMap() {
-    return {
-      'destination': destination,
-      'netmask': netmask,
-      'gateway': gateway,
-    };
-  }
-
-  factory RouteEntry.fromMap(Map<String, dynamic> map) {
-    return RouteEntry(
-      map['destination'] ?? '0.0.0.0',
-      map['netmask'] ?? '255.255.255.0',
-      map['gateway'] ?? '0.0.0.0',
-    );
-  }
-
   @override
   String toString() => "$destination $netmask via $gateway";
 }
-
 
 
 class RouterConfigDialog extends StatefulWidget {
@@ -261,16 +222,18 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
         _field("Router Name:", nameController, readOnly: !isNameEditable),
         const SizedBox(height: 8),
         ElevatedButton(
-        onPressed: () {
-          widget.router.name = nameController.text;
+          onPressed: () {
+            final updatedRouter = RouterDevice(name: nameController.text);
 
-          if (widget.router.name != "Router") {
-            setState(() { isNameEditable = false; });
-          }
+            if (widget.router.name == "Router" &&
+                nameController.text != "Router") {
+              setState(() {
+                isNameEditable = false;
+              });
+            }
 
-          widget.onSave(widget.router);
-        },
-
+            widget.onSave(updatedRouter);
+          },
           child: const Text("Apply"),
         ),
       ],
@@ -515,6 +478,7 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
   
 }
 
+
 extension RouterPing on RouterDevice {
   String handlePing(PCDevice source, String targetIP) {
     // Check directly connected PCs
@@ -536,3 +500,4 @@ extension RouterPing on RouterDevice {
     return "Destination host unreachable.";
   }
 }
+*/

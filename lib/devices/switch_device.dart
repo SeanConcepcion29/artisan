@@ -54,22 +54,20 @@ class SwitchDevice {
 
 
   factory SwitchDevice.fromMap(Map<String, dynamic> map) {
-    final sw = SwitchDevice(
-      name: map['name'] ?? 'Switch',
-    );
+    final sw = SwitchDevice(name: map['name'] ?? 'Switch');
     sw.consoleHistory = List<String>.from(map['consoleHistory'] ?? []);
 
     if (map['ports'] != null) {
       final savedPorts = List<Map<String, dynamic>>.from(map['ports']);
       for (var i = 0; i < sw.ports.length && i < savedPorts.length; i++) {
-        sw.ports[i].applyFromMap(savedPorts[i]); // restore each port
+        sw.ports[i].applyFromMap(savedPorts[i]);
       }
     }
+    
+    sw.console = SwitchConsole(sw);
 
     return sw;
   }
-
-
 }
 
 class SwitchConfigDialog extends StatefulWidget {
