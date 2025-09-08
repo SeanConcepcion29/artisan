@@ -39,6 +39,7 @@ class RouterDevice {
     return {
       'name': name,
       'consoleHistory': consoleHistory,
+      'ports': ports.map((p) => p.toMap()).toList(),
       'routingTable': routingTable.map((r) => r.toMap()).toList(),
       'runningConfig': {
         'interfaces': (runningConfig["interfaces"] as Map).map((k, v) => MapEntry(k, Map<String, dynamic>.from(v))),
@@ -54,6 +55,13 @@ class RouterDevice {
     );
 
     router.consoleHistory = List<String>.from(map['consoleHistory'] ?? []);
+
+    if (map['ports'] != null) {
+      final portMaps = List<Map<String, dynamic>>.from(map['ports']);
+      for (int i = 0; i < portMaps.length && i < router.ports.length; i++) {
+        router.ports[i].applyFromMap(Map<String, dynamic>.from(portMaps[i]));
+      }
+    }
 
     if (map['routingTable'] != null) {
       for (var r in (map['routingTable'] as List)) {
@@ -82,30 +90,6 @@ class RouterDevice {
     }
   }
 
-    /// Apply interface configuration
-  void configureInterface(String id, String ip, String mask, {bool noShut = false}) {
-    final iface = ports.firstWhere((p) => p.id == id, orElse: () => throw Exception("No such interface"));
-    iface.assignIP(ip, mask);
-    if (noShut) iface.noShutdown();
-
-    runningConfig["interfaces"][id] = {
-      "ip": ip,
-      "mask": mask,
-      "up": iface.isUp,
-    };
-  }
-
-  /// Add static route
-  void addRoute(String dest, String mask, String gw) {
-    final entry = RouteEntry(dest, mask, gw);
-    routingTable.add(entry);
-
-    final routes = List<RouteEntry>.from(runningConfig["routes"]);
-    routes.add(entry);
-    runningConfig["routes"] = routes;
-  }
-
-  /// Save config
   void saveConfig() {
     startupConfig = Map.from(runningConfig);
   }
@@ -479,20 +463,6 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
     );
   }
 
-
-  void _handleCommand(String cmd) {
-    cmd = cmd.trim();
-    if (cmd.isEmpty) return;
-
-    setState(() {
-      widget.router.consoleHistory.add("${widget.router.console.getPrompt()} $cmd");
-      final output = widget.router.console.processCommand(cmd);
-      if (output.isNotEmpty) { widget.router.consoleHistory.add(output); }
-      _consoleController.clear();
-    });
-  }
-
-
   Widget _field(String label, TextEditingController controller, {bool readOnly = false}) {
     return Row(
       children: [
@@ -511,6 +481,25 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
         ),
       ],
     );
+  }
+
+
+
+  /// --------------------------------
+  /// HELPER FUNCTIONS
+  /// --------------------------------
+
+
+  void _handleCommand(String cmd) {
+    cmd = cmd.trim();
+    if (cmd.isEmpty) return;
+
+    setState(() {
+      widget.router.consoleHistory.add("${widget.router.console.getPrompt()} $cmd");
+      final output = widget.router.console.processCommand(cmd);
+      if (output.isNotEmpty) { widget.router.consoleHistory.add(output); }
+      _consoleController.clear();
+    });
   }
   
 }

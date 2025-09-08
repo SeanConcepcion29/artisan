@@ -2,10 +2,34 @@ import 'package:flutter/material.dart';
 
 class ProjectCard extends StatelessWidget {
   final Map<String, dynamic> project;
-  const ProjectCard({super.key, required this.project});
+  final bool isEditMode;
+  final VoidCallback? onDelete;
+  final VoidCallback? onEdit;
+
+  const ProjectCard({
+    super.key,
+    required this.project,
+    this.isEditMode = false,
+    this.onDelete,
+    this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final title = project['title'] ?? "Untitled Project";
+
+    String formatDate(dynamic ts) {
+      if (ts == null) return "N/A";
+      try {
+        final date = ts.toDate();
+        return "${date.day.toString().padLeft(2, '0')}/"
+            "${date.month.toString().padLeft(2, '0')}/"
+            "${date.year}";
+      } catch (e) {
+        return "N/A";
+      }
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -16,41 +40,60 @@ class ProjectCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title
-          Text(
-            project['title'] ?? "Untitled Project",
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          // Date + Likes + Downloads row
+          // Title + Edit/Delete actions
           Row(
             children: [
-              // Date
               Expanded(
-                child: Text( 
-                  "Last Modified: ${project['datemodified'] != null ? "${project['datemodified'].toDate().day.toString().padLeft(2, '0')}/${project['datemodified'].toDate().month.toString().padLeft(2, '0')}/${project['datemodified'].toDate().year}" : 'N/A'}\n"
-                  "Date Created: ${project['datecreated'] != null ? "${project['datecreated'].toDate().day.toString().padLeft(2, '0')}/${project['datecreated'].toDate().month.toString().padLeft(2, '0')}/${project['datecreated'].toDate().year}" : 'N/A'}",
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 6),
+
+          // Dates + Solo/Group icon
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  "Last Modified: ${formatDate(project['datemodified'])}\n"
+                  "Date Created: ${formatDate(project['datecreated'])}",
                   style: const TextStyle(color: Colors.white70, fontSize: 12),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
 
-              Icon(
-                project['solo'] == true 
-                    ? Icons.person_outline 
+              if (isEditMode) ...[
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.white),
+                  onPressed: onEdit,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: onDelete,
+                ),
+              ] else ...[
+                Icon(
+                project['solo'] == true
+                    ? Icons.person_outline
                     : Icons.group_outlined,
                 color: Colors.white70,
                 size: 20,
-              ),
+              ),      
+              ]
+
+
             ],
           ),
         ],
       ),
-
     );
   }
 }

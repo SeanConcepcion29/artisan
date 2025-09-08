@@ -26,16 +26,42 @@ class PCConsole {
       return "Cannot ping self.";
     }
 
-    const int initialTTL = 5; // Only allow 5 hops
-    final result = _traverseNetwork(pc.port, targetIP, {}, initialTTL);
+    const int initialTTL = 5; // only allow 5 hops
+    const int attempts = 5;   // number of echo requests
+    int received = 0;
 
-    if (result == PingResult.reachable) {
-      return "Reply from $targetIP: bytes=32 time<1ms TTL=$initialTTL";
-    } else if (result == PingResult.ttlExpired) {
-      return "Request timed out. (TTL expired)";
-    } else {
-      return "Destination host unreachable.";
+    final buffer = StringBuffer();
+
+    for (int i = 0; i < attempts; i++) {
+      final forward = _traverseNetwork(pc.port, targetIP, {}, initialTTL);
+
+      if (forward == PingResult.reachable) {
+        // ✅ check if the target can reply back
+        final reply =
+            _traverseNetwork(pc.port, pc.ipAddress, {}, initialTTL);
+        if (reply == PingResult.reachable) {
+          buffer.writeln(
+              "Reply from $targetIP: bytes=32 time<1ms TTL=$initialTTL");
+          received++;
+        } else {
+          buffer.writeln("Request timed out. (no reply)");
+        }
+      } else if (forward == PingResult.ttlExpired) {
+        buffer.writeln("Request timed out. (TTL expired)");
+      } else {
+        buffer.writeln("Destination host unreachable.");
+      }
     }
+
+    int lost = attempts - received;
+    int lossPercent = ((lost / attempts) * 100).round();
+
+    buffer.writeln("");
+    buffer.writeln("Ping statistics for $targetIP:");
+    buffer.writeln(
+        "    Packets: Sent = $attempts, Received = $received, Lost = $lost ($lossPercent% loss)");
+    buffer.writeln("");
+    return buffer.toString().trim();
   }
 }
 
@@ -85,7 +111,8 @@ PingResult _traverseNetwork(
     for (final p in router.ports) {
       if (p.isUp) {
         if (p.ipAddress == targetIP) return PingResult.reachable;
-        if (p.connectedPC != null && p.connectedPC!.ipAddress == targetIP) {
+        if (p.connectedPC != null &&
+            p.connectedPC!.ipAddress == targetIP) {
           return PingResult.reachable;
         }
       }
@@ -127,7 +154,7 @@ PingResult _traverseNetwork(
   // connected Switch (no TTL decrement)
   if (start.connectedSwitch != null) {
     for (final p in start.connectedSwitch!.ports) {
-      if (p.isUp) {
+      if (p.isUp && p != start) { // 🚀 skip incoming port
         final res = _traverseNetwork(p, targetIP, visited, ttl);
         if (res != PingResult.unreachable) return res;
       }

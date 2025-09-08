@@ -12,7 +12,7 @@ class FirestoreProjects {
     required String title,
     required DateTime dateCreated,
     required DateTime dateModified,
-    bool public = true,
+    bool public = false,
     bool solo = true,
     List<String> collabs = const [],
     int downloads = 0,
@@ -64,6 +64,47 @@ class FirestoreProjects {
     final now = DateTime.now();
     await projectsCollection.doc(docId).update({
       'datemodified': Timestamp.fromDate(now),
+    });
+  }
+
+  // ✅ UPDATE PROJECT TITLE
+  Future<void> updateProjectTitle(String docId, String newTitle) async {
+    final now = DateTime.now();
+    await projectsCollection.doc(docId).update({
+      'title': newTitle,
+      'datemodified': Timestamp.fromDate(now),
+    });
+  }
+
+  // ✅ DELETE PROJECT
+  Future<void> deleteProject(String docId) async {
+    await projectsCollection.doc(docId).delete();
+  }
+
+  Future<Map<String, dynamic>?> getProjectById(String docId) async {
+    final docSnapshot = await projectsCollection.doc(docId).get();
+
+    if (docSnapshot.exists) {
+      return {
+        'id': docSnapshot.id,
+        ...docSnapshot.data() as Map<String, dynamic>,
+      };
+    }
+    return null;
+  }
+
+    /// Add member by email
+  Future<void> addMember(String projectId, String email) async {
+    if (email.isEmpty) return;
+    await projectsCollection.doc(projectId).update({
+      "collabs": FieldValue.arrayUnion([email]),
+    });
+  }
+
+  /// Toggle public/private
+  Future<void> updatePublic(String projectId, bool public) async {
+    await projectsCollection.doc(projectId).update({
+      "public": public,
     });
   }
 }

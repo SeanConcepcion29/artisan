@@ -13,6 +13,7 @@ class ProjectWorkspacePage extends StatefulWidget {
   final String projectName;
   final String projectId;
 
+
   const ProjectWorkspacePage({super.key, required this.projectName, required this.projectId});
 
   @override
@@ -25,8 +26,11 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
   String? _selectedCategory;
   String? _selectedToolbar = "Select Tool";
 
+  Map<String, dynamic>? projectData;
   List<DroppedItem> droppedItems = [];
   List<Connection> connections = [];
+
+  final firestoreProjects = FirestoreProjects();
 
   @override
   void initState() {
@@ -34,9 +38,21 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
     _loadWorkspace();
   }
 
+  Future<void> _reloadProject() async {
+    final project = await firestoreProjects.getProjectById(widget.projectId);
+
+    // ✅ Preserve droppedItems and connections (don’t reset them)
+    setState(() {
+      projectData = project;
+    });
+}
+
   Future<void> _loadWorkspace() async {
     final workspace = await loadWorkspace(widget.projectId);
+    final project = await firestoreProjects.getProjectById(widget.projectId);
+
     setState(() {
+      projectData = project;
       droppedItems = workspace.items;
       connections = workspace.connections;
     });
@@ -66,7 +82,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                         SvgPicture.asset('assets/images/logo.svg', height: 30),
                         const SizedBox(width: 8),
                         Text(
-                          widget.projectName,
+                          projectData?['title'] ?? widget.projectName,
                           style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
                         ),
                       ],
@@ -76,8 +92,143 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                   /*** RIGHT TOP BAR ***/
                   Row(
                     children: [
-                      GestureDetector( onTap: () => {}, child: const Icon(Icons.group, color: Colors.white)),
+
+                      GestureDetector(
+                        onTap: () {
+                          if (projectData == null) return;
+
+                          showDialog(
+                            context: context,
+                            builder: (ctx) {
+                              final owner = projectData!['owner'] ?? "Unknown";
+                              final collabs = List<String>.from(projectData!['collabs'] ?? []);
+
+                              // Combine owner + collabs into one list
+                              final members = [owner, ...collabs];
+
+                              return AlertDialog(
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                title: const Text("Project Members", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    for (final m in members)
+                                      Text(
+                                        m == owner ? "$m (owner)" : m,
+                                        style: TextStyle(
+                                          fontWeight: m == owner ? FontWeight.bold : FontWeight.normal,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx),
+                                    child: const Text("Close", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                        child: const Icon(Icons.group, color: Colors.white),
+                      ),
+
+
                       const SizedBox(width: 16),
+
+
+                      GestureDetector(
+                        onTap: () {
+                          if (projectData == null) return;
+
+                          final TextEditingController emailController = TextEditingController();
+                          bool public = projectData!['public'] ?? false;
+
+                          showDialog(
+                            context: context,
+                            builder: (ctx) {
+                              return StatefulBuilder(
+                                builder: (ctx, setState) {
+                                  return AlertDialog(
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    title: const Text("Share Project", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+
+                                        /// Add member
+                                        const Text("Add Member by Email"),
+                                        const SizedBox(height: 8),
+                                        TextField(
+                                          controller: emailController,
+                                          decoration: InputDecoration(
+                                            hintText: "Enter email",
+                                            border: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
+
+                                        /// Toggle Public
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text("Make project public"),
+                                            Switch(
+                                              value: public,
+                                              onChanged: (val) {
+                                                setState(() => public = val);
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(ctx),
+                                        child: const Text("Cancel", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
+                                      ),
+                                      TextButton(
+                                        onPressed: () async {
+                                          final email = emailController.text.trim();
+
+                                          if (email.isNotEmpty) {
+                                            await firestoreProjects.addMember(widget.projectId, email);
+                                          }
+
+                                          await firestoreProjects.updatePublic(widget.projectId, public);
+
+                                          await _reloadProject();
+
+                                          if (mounted) {
+                                            Navigator.pop(ctx);
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text("Project settings updated!")),
+                                            );
+                                          }
+                                        },
+                                        child: const Text("Save", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                          );
+                        },
+                        child: const Icon(Icons.share, color: Colors.white),
+                      ),
+
+
+                      const SizedBox(width: 16),
+
+
                       GestureDetector(
                         onTap: () async {
                           await saveWorkspace(widget.projectId, droppedItems, connections);
@@ -85,10 +236,12 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                         },
                         child: const Icon(Icons.save, color: Colors.white),
                       ),
-                      const SizedBox(width: 16),
-                      GestureDetector(onTap: () => {}, child: const Icon(Icons.share, color: Colors.white)),
+
                     ],
                   ),
+
+
+
                 ],
               ),
             ),
@@ -463,7 +616,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
           ),
 
           SizedBox(
-            width: 70, 
+            width: 65, 
             child: Text(
               displayText,
               style: TextStyle(

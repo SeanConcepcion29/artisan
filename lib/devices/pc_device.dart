@@ -33,7 +33,7 @@ class PCDevice {
       'subnetMask': subnetMask,
       'defaultGateway': defaultGateway,
       'consoleHistory': consoleHistory,
-      'port': port.toMap(),  // include port state
+      'port': port.toMap(), 
     };
   }
 
@@ -285,8 +285,6 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
   }
 
 
-
-
   Widget _buildConnectionsUI() {
     final availableRouters = widget.droppedItems
         .where((item) => item.routerConfig != null)
@@ -448,6 +446,31 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
       ],
     );
   }
+  Widget _field(String label, TextEditingController controller, {bool readOnly = false}) {
+    return Row(
+      children: [
+        SizedBox(width: 120, child: Text(label)),
+        Expanded(
+          child: TextField(
+            controller: controller,
+            readOnly: readOnly,
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              fillColor: readOnly ? Colors.grey.shade200 : null,
+              filled: readOnly,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+
+
+  /// --------------------------------
+  /// HELPER FUNCTIONS
+  /// --------------------------------
 
 
   void _handleCommand(String cmd) {
@@ -473,25 +496,5 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
       _consoleController.clear();
     });
   }
-
-
-  Widget _field(String label, TextEditingController controller, {bool readOnly = false}) {
-    return Row(
-      children: [
-        SizedBox(width: 120, child: Text(label)),
-        Expanded(
-          child: TextField(
-            controller: controller,
-            readOnly: readOnly,
-            decoration: InputDecoration(
-              border: const OutlineInputBorder(),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              fillColor: readOnly ? Colors.grey.shade200 : null,
-              filled: readOnly,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }
+

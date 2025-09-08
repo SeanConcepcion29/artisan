@@ -10,11 +10,10 @@ import 'package:artisan/components/project_card.dart';
 import 'package:artisan/components/guide_tab.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
 class HomePage extends StatefulWidget {
   final String userEmail;
 
-  const HomePage({Key? key, required this.userEmail}) : super(key: key);
+  const HomePage({super.key, required this.userEmail});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -30,9 +29,11 @@ class _HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> sharedProjects = [];
   List<Map<String, dynamic>> userNotifications = [];
 
-
   bool isLoading = true;
-  int _selectedIndex = 0; 
+  int _selectedIndex = 0;
+
+  // ✅ Track edit mode
+  bool _isEditMode = false;
 
   @override
   void initState() {
@@ -40,20 +41,21 @@ class _HomePageState extends State<HomePage> {
     fetchUserAndProjects();
   }
 
-
   Future<void> fetchUserAndProjects() async {
     final data = await firestoreUsers.getUserByEmail(widget.userEmail);
 
     if (data != null) {
-      final projects = await firestoreProjects.getAllProjectsByEmail(widget.userEmail);
+      final projects =
+          await firestoreProjects.getAllProjectsByEmail(widget.userEmail);
       final allShared = await firestoreProjects.getAllPublicProjects();
-      final notifications = await firestoreNotifications.getNotificationsByEmail(widget.userEmail);
+      final notifications =
+          await firestoreNotifications.getNotificationsByEmail(widget.userEmail);
 
       setState(() {
         userData = data;
         userProjects = projects;
         sharedProjects = allShared;
-        userNotifications = notifications; 
+        userNotifications = notifications;
         isLoading = false;
       });
     } else {
@@ -64,13 +66,73 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-
   void _onItemTapped(int index) async {
     setState(() {
       _selectedIndex = index;
     });
   }
 
+  Future<void> _deleteProject(String projectId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Project", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
+        content: const Text(
+          "Are you sure you want to delete this project?\nThis action cannot be undone.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold))
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await firestoreProjects.deleteProject(projectId);
+      fetchUserAndProjects();
+    }
+  }
+
+
+  void _showRenameDialog(String projectId, String oldTitle) {
+    final controller = TextEditingController(text: oldTitle);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Rename Project", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
+          ),
+          TextButton(
+            onPressed: () async {
+              final newName = controller.text.trim();
+              if (newName.isNotEmpty) {
+                await firestoreProjects.updateProjectTitle(projectId, newName);
+                fetchUserAndProjects();
+                Navigator.pop(context);
+              }
+            },
+            child: const Text("Save", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,21 +160,29 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: Column(
           children: [
-
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-
-
+                  // 👇 Gear icon toggles edit mode only in Projects tab
                   InkWell(
                     onTap: () {
-                      print("Left icon clicked");
+                      if (_selectedIndex == 0) {
+                        setState(() {
+                          _isEditMode = !_isEditMode;
+                        });
+                      }
                     },
-                    child: const Icon(Icons.hexagon_outlined, color: Colors.white, size: 28),
+                    child: Icon(
+                      _isEditMode && _selectedIndex == 0
+                          ? Icons.settings
+                          : Icons.settings_outlined,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                   ),
-
 
                   const Text(
                     "ARTISAN",
@@ -123,27 +193,24 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
 
-
                   GestureDetector(
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ProfilePage(userData: userData!),
+                          builder: (context) =>
+                              ProfilePage(userData: userData!),
                         ),
                       );
                     },
-                    child: const Icon(Icons.account_circle_outlined, color: Colors.white, size: 28),
+                    child: const Icon(Icons.account_circle_outlined,
+                        color: Colors.white, size: 28),
                   ),
-
-
                 ],
               ),
             ),
 
-            
             const SizedBox(height: 20),
-
 
             Expanded(
               child: _selectedIndex == 2
@@ -155,11 +222,14 @@ class _HomePageState extends State<HomePage> {
                               .orderBy('date', descending: true)
                               .snapshots(),
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
                               return const Center(
-                                  child: CircularProgressIndicator(color: Colors.white));
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white));
                             }
-                            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                            if (!snapshot.hasData ||
+                                snapshot.data!.docs.isEmpty) {
                               return const Center(
                                 child: Text("No notifications",
                                     style: TextStyle(color: Colors.white70)),
@@ -167,17 +237,20 @@ class _HomePageState extends State<HomePage> {
                             }
 
                             final notifs = snapshot.data!.docs.map((doc) {
-                              final data = doc.data() as Map<String, dynamic>;
+                              final data =
+                                  doc.data() as Map<String, dynamic>;
                               return {
                                 "email": data['email'] ?? "Unknown",
                                 "message": data['message'] ?? "",
                                 "opened": data['opened'] ?? false,
-                                "date": (data['date'] as Timestamp).toDate(),
+                                "date":
+                                    (data['date'] as Timestamp).toDate(),
                               };
                             }).toList();
 
                             return ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16.0),
                               itemCount: notifs.length,
                               itemBuilder: (context, index) {
                                 final notif = notifs[index];
@@ -192,140 +265,177 @@ class _HomePageState extends State<HomePage> {
                           },
                         )
                       : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        itemCount: _selectedIndex == 1 
-                            ? projectsToShow.length // ✅ no extra card in shared tab
-                            : projectsToShow.length + 1, // ✅ add extra card only in own projects tab
-                        itemBuilder: (context, index) {
-                          if (_selectedIndex != 1 && index == projectsToShow.length) {
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          itemCount: _selectedIndex == 1
+                              ? projectsToShow.length
+                              : projectsToShow.length + 1,
+                          itemBuilder: (context, index) {
+                            if (_selectedIndex != 1 &&
+                                index == projectsToShow.length) {
+                              // 👇 Last card: Create New Project
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                      color: Colors.white, width: 2),
+                                ),
+                                child: InkWell(
+                                  onTap: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) {
+                                        final TextEditingController
+                                            nameController =
+                                            TextEditingController();
+                                        final formKey =
+                                            GlobalKey<FormState>();
 
-                            // 👇 Last card: Create New Project
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.white, width: 2),
-                              ),
-    
-                              child: InkWell(
-                                onTap: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      final TextEditingController _nameController = TextEditingController();
-                                      final _formKey = GlobalKey<FormState>();
-
-                                      return AlertDialog(
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                        title: const Text("Create New Project"),
-                                        content: Form(
-                                          key: _formKey,
-                                          child: TextFormField(
-                                            controller: _nameController,
-                                            decoration: const InputDecoration(
-                                              labelText: "Project Name",
-                                              border: OutlineInputBorder(),
+                                        return AlertDialog(
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      12)),
+                                          title: const Text(
+                                              "Create New Project", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
+                                          content: Form(
+                                            key: formKey,
+                                            child: TextFormField(
+                                              controller: nameController,
+                                              decoration:
+                                                  const InputDecoration(
+                                                labelText: "Project Name",
+                                                border:
+                                                    OutlineInputBorder(),
+                                              ),
+                                              validator: (value) {
+                                                if (value == null ||
+                                                    value.trim().isEmpty) {
+                                                  return "Project name is required";
+                                                }
+                                                return null;
+                                              },
                                             ),
-                                            validator: (value) {
-                                              if (value == null || value.trim().isEmpty) {
-                                                return "Project name is required";
-                                              }
-                                              return null;
-                                            },
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(
+                                                      context),
+                                              child:
+                                                  const Text("Cancel", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
+                                            ),
+                                            TextButton(
+                                              onPressed: () async {
+                                                if (formKey.currentState!
+                                                    .validate()) {
+                                                  final newProjectId =
+                                                      FirebaseFirestore
+                                                          .instance
+                                                          .collection(
+                                                              'projects')
+                                                          .doc()
+                                                          .id;
+                                                  final now =
+                                                      DateTime.now();
+
+                                                  await firestoreProjects
+                                                      .createProject(
+                                                    email: userData![
+                                                        'email'],
+                                                    owner: userData![
+                                                        'email'],
+                                                    projectId:
+                                                        newProjectId,
+                                                    title: nameController
+                                                        .text
+                                                        .trim(),
+                                                    dateCreated: now,
+                                                    dateModified: now,
+                                                    public: false,
+                                                    solo: true,
+                                                    collabs: [],
+                                                    downloads: 0,
+                                                    likes: 0,
+                                                  );
+
+                                                  fetchUserAndProjects();
+                                                  Navigator.pop(context);
+                                                }
+                                              },
+                                              child:
+                                                  const Text("Create", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.add,
+                                            size: 28,
+                                            color: Color(0xFF1E1F2A)),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          "Create New Project",
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF1E1F2A),
                                           ),
                                         ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () => Navigator.pop(context),
-                                            child: const Text("Cancel"),
-                                          ),
-                                          ElevatedButton(
-                                            onPressed: () async {
-                                              if (_formKey.currentState!.validate()) {
-                                                final newProjectId = FirebaseFirestore.instance
-                                                    .collection('projects')
-                                                    .doc()
-                                                    .id; // generate unique projectId
-                                                final now = DateTime.now();
-
-                                                await firestoreProjects.createProject(
-                                                  email: userData!['email'],
-                                                  owner: userData!['email'],
-                                                  projectId: newProjectId,
-                                                  title: _nameController.text.trim(),
-                                                  dateCreated: now,
-                                                  dateModified: now,
-                                                  public: true,
-                                                  solo: true,
-                                                  collabs: [],
-                                                  downloads: 0,
-                                                  likes: 0,
-                                                );
-
-                                                fetchUserAndProjects();
-                                                Navigator.pop(context);
-                                              }
-                                            },
-                                            child: const Text("Create"),
-                                          ),
-
-                                        ],
-                                      );
-                                    },
-                                  );
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center, // ✅ Center content horizontally
-                                    children: const [
-                                      Icon(Icons.add, size: 28, color: Color(0xFF1E1F2A)),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        "Create New Project",
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF1E1F2A),
-                                        ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
-
-                              ),
-                            );
-                          }
-
-                          // 👇 Normal project cards
-                          final project = projectsToShow[index];
-                          final projectName = project['title'] ?? "Untitled Project";
-                          final projectId = project['id'] ?? "unknown_id";
-
-                          return InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ProjectWorkspacePage(projectName: projectName, projectId: projectId),
-                                ),
                               );
-                            },
-                            child: _selectedIndex == 1
-                                ? SharedProjectCard(
-                                    projectId: project['id'],
-                                    userEmail: userData!['email'],
-                                    project: project,
-                                  )
-                                : ProjectCard(project: project),
-                          );
-                        },
-                      )
+                            }
 
+                            // 👇 Normal project cards
+                            final project = projectsToShow[index];
+                            final projectName =
+                                project['title'] ?? "Untitled Project";
+                            final projectId =
+                                project['id'] ?? "unknown_id";
+
+                            return InkWell(
+                              onTap: () {
+                                if (_isEditMode) return; // disable open
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ProjectWorkspacePage(
+                                      projectName: projectName,
+                                      projectId: projectId,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: _selectedIndex == 1
+                                  ? SharedProjectCard(
+                                      projectId: project['id'],
+                                      userEmail: userData!['email'],
+                                      project: project,
+                                    )
+                                  : ProjectCard(
+                                      project: project,
+                                      isEditMode: _isEditMode,
+                                      onEdit: () => _showRenameDialog(
+                                          projectId, projectName),
+                                      onDelete: () =>
+                                          _deleteProject(projectId),
+                                    ),
+                            );
+                          },
+                        ),
             ),
-
-
           ],
         ),
       ),
