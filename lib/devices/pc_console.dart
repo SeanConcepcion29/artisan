@@ -1,5 +1,6 @@
 import 'package:artisan/devices/ethernet_port.dart';
 import 'package:artisan/devices/pc_device.dart';
+import 'package:flutter/foundation.dart';
 
 class PCConsole {
   final PCDevice pc;
@@ -7,6 +8,7 @@ class PCConsole {
   PCConsole(this.pc);
 
   String getPrompt() => "${pc.name}>";
+
 
   String processCommand(String input) {
     if (input.trim().isEmpty) return "";
@@ -20,6 +22,8 @@ class PCConsole {
 
     return "% Unknown command";
   }
+
+
 
   String _ping(String targetIP) {
     if (targetIP == pc.ipAddress) {
@@ -36,19 +40,24 @@ class PCConsole {
       final forward = _traverseNetwork(pc.port, targetIP, {}, initialTTL);
 
       if (forward == PingResult.reachable) {
-        // ✅ check if the target can reply back
-        final reply =
-            _traverseNetwork(pc.port, pc.ipAddress, {}, initialTTL);
+        final reply = _traverseNetwork(pc.port, pc.ipAddress, {}, initialTTL);
+
         if (reply == PingResult.reachable) {
           buffer.writeln(
               "Reply from $targetIP: bytes=32 time<1ms TTL=$initialTTL");
           received++;
-        } else {
+        }
+        
+        else {
           buffer.writeln("Request timed out. (no reply)");
         }
-      } else if (forward == PingResult.ttlExpired) {
+      }
+      
+      else if (forward == PingResult.ttlExpired) {
         buffer.writeln("Request timed out. (TTL expired)");
-      } else {
+      }
+      
+      else {
         buffer.writeln("Destination host unreachable.");
       }
     }
@@ -82,11 +91,16 @@ int _ipToInt(String ip) {
       (parts[3]);
 }
 
-PingResult _traverseNetwork(
-    EthernetPort start, String targetIP, Set<EthernetPort> visited, int ttl) {
+
+
+
+
+PingResult _traverseNetwork(EthernetPort start, String targetIP, Set<EthernetPort> visited, int ttl) {
   if (ttl <= 0) return PingResult.ttlExpired;
   if (visited.contains(start)) return PingResult.unreachable;
   visited.add(start);
+
+  if (kDebugMode) { print(start.id);}
 
   // direct match on this port
   if (start.ipAddress == targetIP && start.isUp) {
@@ -98,8 +112,8 @@ PingResult _traverseNetwork(
     if (start.connectedPC!.ipAddress == targetIP) {
       return PingResult.reachable;
     }
-    final res =
-        _traverseNetwork(start.connectedPC!.port, targetIP, visited, ttl);
+
+    final res = _traverseNetwork(start.connectedPC!.port, targetIP, visited, ttl);
     if (res != PingResult.unreachable) return res;
   }
 
@@ -111,8 +125,7 @@ PingResult _traverseNetwork(
     for (final p in router.ports) {
       if (p.isUp) {
         if (p.ipAddress == targetIP) return PingResult.reachable;
-        if (p.connectedPC != null &&
-            p.connectedPC!.ipAddress == targetIP) {
+        if (p.connectedPC != null && p.connectedPC!.ipAddress == targetIP) {
           return PingResult.reachable;
         }
       }
@@ -122,8 +135,7 @@ PingResult _traverseNetwork(
     for (final p in router.ports) {
       if (p.isUp && p.ipAddress != null && p.subnetMask != null) {
         if (_sameSubnet(p.ipAddress!, targetIP, p.subnetMask!)) {
-          final res =
-              _traverseNetwork(p, targetIP, visited, ttl - 1); // TTL dec here
+          final res = _traverseNetwork(p, targetIP, visited, ttl - 1); // TTL dec here
           if (res != PingResult.unreachable) return res;
         }
       }
@@ -143,8 +155,7 @@ PingResult _traverseNetwork(
           }
         }
         if (gwPort != null) {
-          final res =
-              _traverseNetwork(gwPort, targetIP, visited, ttl - 1); // TTL dec
+          final res = _traverseNetwork(gwPort, targetIP, visited, ttl - 1); // TTL dec
           if (res != PingResult.unreachable) return res;
         }
       }
@@ -154,7 +165,7 @@ PingResult _traverseNetwork(
   // connected Switch (no TTL decrement)
   if (start.connectedSwitch != null) {
     for (final p in start.connectedSwitch!.ports) {
-      if (p.isUp && p != start) { // 🚀 skip incoming port
+      if (p.isUp && p != start) {
         final res = _traverseNetwork(p, targetIP, visited, ttl);
         if (res != PingResult.unreachable) return res;
       }

@@ -13,11 +13,8 @@ class RouterDevice {
     EthernetPort(id: "fast0/1")
   ];
 
-
-
   List<String> consoleHistory = [];
   final List<RouteEntry> routingTable = [];
-
 
   late RouterConsole console;
 
@@ -32,7 +29,6 @@ class RouterDevice {
     "routes": <RouteEntry>[],
   };
 
-  /// Saved config
   Map<String, dynamic> startupConfig = {};
 
   Map<String, dynamic> toMap() {
@@ -354,9 +350,7 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
           return ListTile(
             leading: const Icon(Icons.cable, color: Colors.black87),
             title: Text(port.id),
-            subtitle: port.isFree
-                ? const Text("Available")
-                : Text("Connected to ${port.connectedPC?.name ?? port.connectedRouter?.name ?? port.connectedSwitch?.name ?? 'Unknown'}"),
+            subtitle: port.isFree ? const Text("Available") : Text("Connected to ${port.connectedPC?.name ?? port.connectedRouter?.name ?? port.connectedSwitch?.name ?? 'Unknown'}"),
             trailing: port.isFree
                 ? PopupMenuButton<dynamic>(
                     icon: const Icon(Icons.add_link, color: Colors.green),
@@ -502,26 +496,4 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
     });
   }
   
-}
-
-extension RouterPing on RouterDevice {
-  String handlePing(PCDevice source, String targetIP) {
-    // Check directly connected PCs
-    for (var p in ports) {
-      if (p.connectedPC != null && p.connectedPC!.ipAddress == targetIP) {
-        return "Reply from $targetIP: bytes=32 time<1ms TTL=64";
-      }
-    }
-
-    // Check directly connected router
-    for (var p in ports) {
-      if (p.connectedRouter != null) {
-        final result = p.connectedRouter!.handlePing(source, targetIP);
-        if (!result.contains("unreachable")) return result;
-      }
-    }
-
-    // TODO: check static routes if you have them
-    return "Destination host unreachable.";
-  }
 }

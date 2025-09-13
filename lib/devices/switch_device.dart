@@ -396,8 +396,7 @@ Widget _buildConsoleUI() {
   }
 
 
-  Widget _field(String label, TextEditingController controller,
-      {bool readOnly = false}) {
+  Widget _field(String label, TextEditingController controller, {bool readOnly = false}) {
     return Row(
       children: [
         SizedBox(width: 120, child: Text(label)),
@@ -416,24 +415,5 @@ Widget _buildConsoleUI() {
         ),
       ],
     );
-  }
-}
-
-extension SwitchPing on SwitchDevice {
-  String handlePing(PCDevice source, String targetIP) {
-    for (var p in ports) {
-      if (p.connectedPC != null && p.connectedPC!.ipAddress == targetIP) {
-        return "Reply from $targetIP: bytes=32 time<1ms TTL=64";
-      }
-      if (p.connectedRouter != null) {
-        final result = p.connectedRouter!.handlePing(source, targetIP);
-        if (!result.contains("unreachable")) return result;
-      }
-      if (p.connectedSwitch != null && p.connectedSwitch != this) {
-        final result = p.connectedSwitch!.handlePing(source, targetIP);
-        if (!result.contains("unreachable")) return result;
-      }
-    }
-    return "Destination host unreachable.";
   }
 }

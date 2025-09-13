@@ -31,22 +31,17 @@ class RouterConsole {
     final cmd = args.first.toLowerCase();
 
     switch (_mode) {
-
       /*** USER MODE ***/
       case RouterMode.user:
         if (cmd == "enable") {
           _mode = RouterMode.privileged;
           return "";
-        }
-
-        else if (cmd == "clear") {
+        } else if (cmd == "clear") {
           router.consoleHistory.clear();
           return "";
         }
 
-      return "% Invalid input at '${args.join(" ")}'";
-
-
+        return "% Invalid input at '${args.join(" ")}'";
 
       /*** PRIVILEGED MODE ***/
       case RouterMode.privileged:
@@ -55,70 +50,61 @@ class RouterConsole {
             args[1].toLowerCase() == "terminal") {
           _mode = RouterMode.globalConfig;
           return "";
-        }
-
-        else if (cmd == "show" && args.length >= 2 && args[1] == "ip") {
+        } else if (cmd == "show" && args.length >= 2 && args[1] == "ip") {
           if (args.length >= 3 && args[2] == "route") {
             return _showIPRoutes();
           }
           return _showIP();
-        }
-
-        else if (cmd == "copy" &&
+        } else if (cmd == "show" &&
+            args.length >= 2 &&
+            args[1].toLowerCase() == "connections") {
+          return _showConnections();
+        } else if (cmd == "copy" &&
             args.length == 3 &&
             args[1] == "running-config" &&
             args[2] == "startup-config") {
           router.saveConfig();
           return "Configuration saved to NVRAM.";
-        }
-
-
-        else if (cmd == "disable") {
+        } else if (cmd == "disable") {
           _mode = RouterMode.user;
           return "";
         }
 
-      return "% Unknown command";
-
-
+        return "% Unknown command";
 
       /*** GLOBAL CONFIG MODE ***/
       case RouterMode.globalConfig:
         if (cmd == "interface" && args.length >= 2) {
           final iface = args.sublist(1).join("").toLowerCase();
 
-          final ports = router.ports.where((p) =>
-              p.id.replaceAll("/", "").toLowerCase() == iface ||
-              p.id.toLowerCase() == iface
-          ).toList();
+          final ports = router.ports
+              .where((p) =>
+                  p.id.replaceAll("/", "").toLowerCase() == iface ||
+                  p.id.toLowerCase() == iface)
+              .toList();
 
           if (ports.isEmpty) {
-            return "% Invalid interface"; 
+            return "% Invalid interface";
           }
 
           final port = ports.first;
           _activeInterface = port;
           _mode = RouterMode.interfaceConfig;
           return "";
-
-        }
-
-        else if (cmd == "ip" && args.length == 5 && args[1] == "route") {
+        } else if (cmd == "ip" &&
+            args.length == 5 &&
+            args[1] == "route") {
           final dest = args[2];
           final mask = args[3];
           final gateway = args[4];
           router.routingTable.add(RouteEntry(dest, mask, gateway));
           return "";
-        }
-
-        else if (cmd == "exit") {
+        } else if (cmd == "exit") {
           _mode = RouterMode.privileged;
           return "";
         }
 
-      return "% Invalid input";
-
-
+        return "% Invalid input";
 
       /*** INTERFACE CONFIG MODE ***/
       case RouterMode.interfaceConfig:
@@ -127,27 +113,20 @@ class RouterConsole {
             args[1].toLowerCase() == "address") {
           _activeInterface?.assignIP(args[2], args[3]);
           return "";
-        }
-
-        else if (cmd == "no" &&
+        } else if (cmd == "no" &&
             args.length >= 2 &&
             args[1].toLowerCase() == "shutdown") {
           _activeInterface?.noShutdown();
           return "";
-        }
-
-        else if (cmd == "exit") {
+        } else if (cmd == "exit") {
           _activeInterface = null;
           _mode = RouterMode.globalConfig;
           return "";
         }
 
-      return "% Invalid interface command";
+        return "% Invalid interface command";
     }
   }
-
-
-
 
   String _showIP() {
     return router.ports.map((p) {
@@ -162,8 +141,23 @@ class RouterConsole {
       return "No static routes configured.";
     }
     return router.routingTable
-        .map((r) =>
-            "${r.destination} ${r.netmask} via ${r.gateway}")
+        .map((r) => "${r.destination} ${r.netmask} via ${r.gateway}")
         .join("\n");
+  }
+
+  String _showConnections() {
+    return router.ports.map((p) {
+      String connection = "unconnected";
+
+      if (p.connectedPC != null) {
+        connection = "PC ${p.connectedPC!.ipAddress ?? "no ip"}";
+      } else if (p.connectedRouter != null) {
+        connection = "Router ${p.connectedRouter!.name}";
+      } else if (p.connectedSwitch != null) {
+        connection = "Switch";
+      }
+
+      return "${p.id}: ${p.ipAddress ?? "no ip"} -> $connection";
+    }).join("\n");
   }
 }
