@@ -2,8 +2,13 @@ import 'package:artisan/devices/pc_device.dart';
 import 'package:artisan/devices/router_device.dart';
 import 'package:artisan/devices/switch_device.dart';
 
+import 'package:uuid/uuid.dart';
+
+import 'package:uuid/uuid.dart';
+
 class EthernetPort {
   final String id;
+  String name;
 
   bool isFree = true;
   bool isUp = false;
@@ -15,7 +20,11 @@ class EthernetPort {
   RouterDevice? connectedRouter;
   SwitchDevice? connectedSwitch;
 
-  EthernetPort({required this.id});
+  // UUID generator
+  static final Uuid _uuid = Uuid();
+
+  EthernetPort({String? id, required this.name})
+      : id = id ?? _uuid.v4();
 
   void assignIP(String ip, String mask) {
     ipAddress = ip;
@@ -45,11 +54,15 @@ class EthernetPort {
       'isUp': isUp,
       'ipAddress': ipAddress,
       'subnetMask': subnetMask,
+      'name': name,
     };
   }
 
   factory EthernetPort.fromMap(Map<String, dynamic> map) {
-    final port = EthernetPort(id: map['id']);
+    final port = EthernetPort(
+      id: map['id'],
+      name: map['name'] ?? 'EthernetPort',
+    );
     port.isFree = map['isFree'] ?? true;
     port.isUp = map['isUp'] ?? false;
     port.ipAddress = map['ipAddress'];
@@ -63,6 +76,7 @@ class EthernetPort {
     subnetMask = map['subnetMask'];
   }
 }
+
 
 /*** CONNECT PC TO ROUTER ***/
 bool connectPCToRouter(PCDevice pc, RouterDevice r1) {

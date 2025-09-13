@@ -79,8 +79,8 @@ class RouterConsole {
 
           final ports = router.ports
               .where((p) =>
-                  p.id.replaceAll("/", "").toLowerCase() == iface ||
-                  p.id.toLowerCase() == iface)
+                  p.name.replaceAll("/", "").toLowerCase() == iface ||
+                  p.name.toLowerCase() == iface)
               .toList();
 
           if (ports.isEmpty) {
@@ -130,7 +130,7 @@ class RouterConsole {
 
   String _showIP() {
     return router.ports.map((p) {
-      return "${p.id} ${p.ipAddress ?? "unassigned"} "
+      return "${p.name} ${p.ipAddress ?? "unassigned"} "
           "${p.subnetMask ?? ""} "
           "${p.isUp ? "up" : "administratively down"}";
     }).join("\n");
@@ -150,14 +150,14 @@ class RouterConsole {
       String connection = "unconnected";
 
       if (p.connectedPC != null) {
-        connection = "PC ${p.connectedPC!.ipAddress ?? "no ip"}";
+        connection = "PC ${p.connectedPC!.ipAddress}";
       } else if (p.connectedRouter != null) {
         connection = "Router ${p.connectedRouter!.name}";
       } else if (p.connectedSwitch != null) {
         connection = "Switch";
       }
 
-      return "${p.id}: ${p.ipAddress ?? "no ip"} -> $connection";
+      return "${p.name}: ${p.ipAddress ?? "no ip"} -> $connection";
     }).join("\n");
   }
 }

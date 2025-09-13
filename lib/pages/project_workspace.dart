@@ -317,12 +317,45 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
                                 child: GestureDetector(
                                   onTap: () async {
                                     
-                                    /*** DELETE TOOL ***/
-                                    if (_selectedToolbar == "Delete") {
-                                      final removed = droppedItems.removeAt(index);
-                                      connections.removeWhere((c) => c.fromId == removed.id || c.toId == removed.id);
-                                      setState(() {});
-                                    }
+                                      /*** DELETE TOOL ***/
+                                      if (_selectedToolbar == "Delete") {
+                                        final deviceToRemove = droppedItems[index];
+
+                                        // Check if device has any connections
+                                        final hasConnections = connections.any(
+                                          (c) => c.fromId == deviceToRemove.id || c.toId == deviceToRemove.id,
+                                        );
+
+                                        if (hasConnections) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Row(
+                                                children: [
+                                                  Icon(Icons.error_outline, color: Colors.white),
+                                                  SizedBox(width: 7),
+                                                  Expanded(
+                                                    child: Text(
+                                                      'Cannot delete device with existing connections.',
+                                                      style: TextStyle(color: Colors.white),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              backgroundColor: Colors.red, // Error color
+                                              duration: Duration(seconds: 3),
+                                              behavior: SnackBarBehavior.floating, // Optional: makes it float above content
+                                            ),
+                                          );
+                                        }
+
+                                        
+                                        else {
+                                          // Safe to remove
+                                          droppedItems.removeAt(index);
+                                          setState(() {});
+                                        }
+                                      }
+
 
 
                                     /*** INSPECT TOOL - NOTE ***/

@@ -9,8 +9,8 @@ class RouterDevice {
   String name;
 
   final List<EthernetPort> ports = [
-    EthernetPort(id: "fast0/0"),
-    EthernetPort(id: "fast0/1")
+    EthernetPort(name: "fast0/0"),
+    EthernetPort(name: "fast0/1")
   ];
 
   List<String> consoleHistory = [];
@@ -349,7 +349,7 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
         ...widget.router.ports.map((port) {
           return ListTile(
             leading: const Icon(Icons.cable, color: Colors.black87),
-            title: Text(port.id),
+            title: Text(port.name),
             subtitle: port.isFree ? const Text("Available") : Text("Connected to ${port.connectedPC?.name ?? port.connectedRouter?.name ?? port.connectedSwitch?.name ?? 'Unknown'}"),
             trailing: port.isFree
                 ? PopupMenuButton<dynamic>(

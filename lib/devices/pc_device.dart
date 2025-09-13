@@ -12,7 +12,7 @@ class PCDevice {
   String subnetMask;
   String defaultGateway;
 
-  final EthernetPort port = EthernetPort(id: "eth0/0");
+  final EthernetPort port = EthernetPort(name: "eth0/0");
 
   List<String> consoleHistory = [];
   late PCConsole console;
@@ -302,7 +302,7 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
         const SizedBox(height: 8),
         ListTile(
           leading: const Icon(Icons.cable, color: Colors.black87),
-          title: Text(widget.pc.port.id),
+          title: Text(widget.pc.port.name),
 
           subtitle: widget.pc.port.isFree
               ? const Text("Not connected")
