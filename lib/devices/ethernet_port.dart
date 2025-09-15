@@ -4,7 +4,6 @@ import 'package:artisan/devices/switch_device.dart';
 
 import 'package:uuid/uuid.dart';
 
-import 'package:uuid/uuid.dart';
 
 class EthernetPort {
   final String id;
@@ -15,20 +14,20 @@ class EthernetPort {
   
   String? ipAddress;
   String? subnetMask;
+  String? gateway;  
 
   PCDevice? connectedPC;
   RouterDevice? connectedRouter;
   SwitchDevice? connectedSwitch;
 
-  // UUID generator
   static final Uuid _uuid = Uuid();
 
-  EthernetPort({String? id, required this.name})
-      : id = id ?? _uuid.v4();
+  EthernetPort({String? id, required this.name}) : id = id ?? _uuid.v4();
 
-  void assignIP(String ip, String mask) {
+  void assignIP(String ip, String mask, {String? gw}) {
     ipAddress = ip;
     subnetMask = mask;
+    gateway = gw;
   }
 
   void noShutdown() {
@@ -45,6 +44,9 @@ class EthernetPort {
     connectedSwitch = null;
     isFree = true;
     isUp = false;
+    ipAddress = null;
+    subnetMask = null;
+    gateway = null;
   }
 
   Map<String, dynamic> toMap() {
@@ -54,6 +56,7 @@ class EthernetPort {
       'isUp': isUp,
       'ipAddress': ipAddress,
       'subnetMask': subnetMask,
+      'gateway': gateway,   // <--- persist gateway
       'name': name,
     };
   }
@@ -67,6 +70,7 @@ class EthernetPort {
     port.isUp = map['isUp'] ?? false;
     port.ipAddress = map['ipAddress'];
     port.subnetMask = map['subnetMask'];
+    port.gateway = map['gateway'];   // <--- restore gateway
     return port;
   }
 
@@ -74,8 +78,10 @@ class EthernetPort {
     isUp = map['isUp'] ?? false;
     ipAddress = map['ipAddress'];
     subnetMask = map['subnetMask'];
+    gateway = map['gateway'];   // <--- apply gateway
   }
 }
+
 
 
 /*** CONNECT PC TO ROUTER ***/
@@ -153,5 +159,6 @@ bool connectSwitchToSwitch(SwitchDevice s1, SwitchDevice s2) {
     p2.connectedSwitch = s1;
     return true;
   }
+  
   return false;
 }

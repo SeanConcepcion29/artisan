@@ -5,7 +5,6 @@ import 'package:artisan/devices/switch_device.dart';
 import 'package:artisan/devices/pc_console.dart';
 import 'package:artisan/pages/project_workspace.dart';
 
-
 class PCDevice {
   String name;
   String ipAddress;
@@ -24,6 +23,10 @@ class PCDevice {
     required this.defaultGateway,
   }) {
     console = PCConsole(this);
+
+    port.ipAddress = ipAddress;
+    port.subnetMask = subnetMask;
+    port.gateway = defaultGateway;
   }
 
   Map<String, dynamic> toMap() {
@@ -33,7 +36,7 @@ class PCDevice {
       'subnetMask': subnetMask,
       'defaultGateway': defaultGateway,
       'consoleHistory': consoleHistory,
-      'port': port.toMap(), 
+      'port': port.toMap(),
     };
   }
 
@@ -55,7 +58,6 @@ class PCDevice {
   }
 }
 
-
 class PCConfigDialog extends StatefulWidget {
   final PCDevice pc;
   final void Function(PCDevice pc) onSave;
@@ -76,7 +78,6 @@ class PCConfigDialog extends StatefulWidget {
   @override
   State<PCConfigDialog> createState() => _PCConfigDialogState();
 }
-
 
 class _PCConfigDialogState extends State<PCConfigDialog> {
   late TextEditingController nameController;
@@ -151,7 +152,8 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
               showConnections = false;
               showConsole = false;
             }),
-            child: const Text("Back", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
+            child: const Text("Back",
+                style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context),
@@ -160,7 +162,6 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
       ],
     );
   }
-
 
   Widget _menuButton(String text, VoidCallback onPressed, {bool enabled = true}) {
     return SizedBox(
@@ -175,7 +176,6 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
       ),
     );
   }
-
 
   Widget _buildConfigForm() {
     return Column(
@@ -196,6 +196,10 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
             widget.pc.subnetMask = maskController.text;
             widget.pc.defaultGateway = gatewayController.text;
 
+            widget.pc.port.ipAddress = widget.pc.ipAddress;
+            widget.pc.port.subnetMask = widget.pc.subnetMask;
+            widget.pc.port.gateway = widget.pc.defaultGateway;
+
             if (widget.pc.name == "PC" && nameController.text != "PC") {
               setState(() { isNameEditable = false; });
             }
@@ -207,7 +211,6 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
       ],
     );
   }
-
 
   Widget _buildPingUI() {
     return Column(
@@ -257,9 +260,7 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 backgroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
               ),
               child: const Text("PING", style: TextStyle(fontSize: 10, fontFamily: "monospace", fontWeight: FontWeight.bold, color: Colors.white)),
               onPressed: () {
@@ -284,7 +285,6 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
     );
   }
 
-
   Widget _buildConnectionsUI() {
     final availableRouters = widget.droppedItems
         .where((item) => item.routerConfig != null)
@@ -303,11 +303,7 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
         ListTile(
           leading: const Icon(Icons.cable, color: Colors.black87),
           title: Text(widget.pc.port.name),
-
-          subtitle: widget.pc.port.isFree
-              ? const Text("Not connected")
-              : Text("Connected to ${widget.pc.port.connectedRouter?.name ?? widget.pc.port.connectedSwitch?.name ?? 'Unknown'}"),
-
+          subtitle: widget.pc.port.isFree ? const Text("Not connected") : Text("Connected to ${widget.pc.port.connectedRouter?.name ?? widget.pc.port.connectedSwitch?.name ?? 'Unknown'}"),
           trailing: widget.pc.port.isFree
               ? PopupMenuButton<dynamic>(
                   icon: const Icon(Icons.add_link, color: Colors.green),
@@ -320,9 +316,7 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
                           widget.connections.add(Connection(pcItem.id, routerItem.id));
                           widget.onConnectionsUpdated();
                         }
-                      }
-                      
-                      else if (target is SwitchDevice) {
+                      } else if (target is SwitchDevice) {
                         if (connectPCToSwitch(widget.pc, target)) {
                           final pcItem = widget.droppedItems.firstWhere((i) => i.pcConfig == widget.pc);
                           final swItem = widget.droppedItems.firstWhere((i) => i.switchConfig == target);
@@ -334,8 +328,12 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
                   },
                   itemBuilder: (context) {
                     return [
-                      ...availableRouters.where((r) => r.getFreePort() != null).map((r) => PopupMenuItem(value: r, child: Text("[ROUTER] ${r.name}"))),
-                      ...availableSwitches.where((s) => s.getFreePort() != null).map((s) => PopupMenuItem(value: s, child: Text("[SWITCH] ${s.name}"))),
+                      ...availableRouters
+                          .where((r) => r.getFreePort() != null)
+                          .map((r) => PopupMenuItem(value: r, child: Text("[ROUTER] ${r.name}"))),
+                      ...availableSwitches
+                          .where((s) => s.getFreePort() != null)
+                          .map((s) => PopupMenuItem(value: s, child: Text("[SWITCH] ${s.name}"))),
                     ];
                   },
                 )
@@ -358,16 +356,20 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
                         swPort.disconnect();
                       }
 
-
                       final pcItem = widget.droppedItems.firstWhere((i) => i.pcConfig == widget.pc);
+
                       if (router != null) {
                         final routerItem = widget.droppedItems.firstWhere((i) => i.routerConfig == router);
-                        widget.connections.removeWhere((c) => (c.fromId == pcItem.id && c.toId == routerItem.id) || (c.fromId == routerItem.id && c.toId == pcItem.id));
+                        widget.connections.removeWhere((c) =>
+                            (c.fromId == pcItem.id && c.toId == routerItem.id) ||
+                            (c.fromId == routerItem.id && c.toId == pcItem.id));
                       }
                       
                       else if (sw != null) {
-                        final swItem = widget.droppedItems.firstWhere((i) => i.switchConfig == sw);
-                        widget.connections.removeWhere((c) => (c.fromId == pcItem.id && c.toId == swItem.id) || (c.fromId == swItem.id && c.toId == pcItem.id));
+                        final swItem = widget.droppedItems .firstWhere((i) => i.switchConfig == sw);
+                        widget.connections.removeWhere((c) =>
+                            (c.fromId == pcItem.id && c.toId == swItem.id) ||
+                            (c.fromId == swItem.id && c.toId == pcItem.id));
                       }
 
                       widget.onConnectionsUpdated();
@@ -378,7 +380,6 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
       ],
     );
   }
-
 
   Widget _buildConsoleUI() {
     return Column(
@@ -406,19 +407,15 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
           ),
         ),
         const SizedBox(height: 8),
-
         Text(
           widget.pc.console.getPrompt(),
           style: const TextStyle(
-            color: Colors.green,
-            fontFamily: "monospace",
-            fontSize: 12,
-            fontWeight: FontWeight.bold
-          ),
+              color: Colors.green,
+              fontFamily: "monospace",
+              fontSize: 12,
+              fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
-
-
         TextField(
           controller: _consoleController,
           style: const TextStyle(
@@ -432,12 +429,10 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
             border: const OutlineInputBorder(),
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-
             suffixIcon: IconButton(
               icon: const Icon(Icons.send, color: Colors.white, size: 18),
               onPressed: () => _handleCommand(_consoleController.text),
             ),
-
             hintText: "Enter command...",
             hintStyle: const TextStyle(color: Colors.grey, fontSize: 10),
           ),
@@ -446,7 +441,9 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
       ],
     );
   }
-  Widget _field(String label, TextEditingController controller, {bool readOnly = false}) {
+
+  Widget _field(String label, TextEditingController controller,
+      {bool readOnly = false}) {
     return Row(
       children: [
         SizedBox(width: 120, child: Text(label)),
@@ -466,12 +463,9 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
     );
   }
 
-
-
   /// --------------------------------
   /// HELPER FUNCTIONS
   /// --------------------------------
-
 
   void _handleCommand(String cmd) {
     cmd = cmd.trim();
