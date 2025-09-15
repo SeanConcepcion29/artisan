@@ -41,7 +41,6 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
   Future<void> _reloadProject() async {
     final project = await firestoreProjects.getProjectById(widget.projectId);
 
-    // ✅ Preserve droppedItems and connections (don’t reset them)
     setState(() {
       projectData = project;
     });

@@ -149,6 +149,8 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
   bool showConfig = false;
   bool showConsole = false;
   bool showConnections = false;
+  bool showPortProperties = false;
+
 
   late bool isNameEditable;
 
@@ -181,27 +183,32 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!showConfig && !showConsole && !showConnections) ...[
+            if (!showConfig && !showConsole && !showConnections && !showPortProperties) ...[
               _menuButton("Configure", () => setState(() => showConfig = true)),
               const SizedBox(height: 8),
               _menuButton("Console", () => setState(() => showConsole = true), enabled: hasValidName),
               const SizedBox(height: 8),
               _menuButton("Connections", () => setState(() => showConnections = true), enabled: hasValidName),
+              const SizedBox(height: 8),
+              _menuButton("Port Properties", () => setState(() => showPortProperties = true), enabled: hasValidName),
             ],
             if (showConfig) _buildConfigForm(),
             if (showConsole) _buildConsoleUI(),
             if (showConnections) _buildConnectionsUI(),
+            if (showPortProperties) _buildPortPropertiesUI(),
+
           ],
         ),
       ),
       actions: [
-        if (showConfig || showConsole || showConnections)
+        if (showConfig || showConsole || showConnections || showPortProperties)
           TextButton(
-            onPressed: () => setState(() {
-              showConfig = false;
-              showConsole = false;
-              showConnections = false;
-            }),
+              onPressed: () => setState(() {
+                showConfig = false;
+                showConsole = false;
+                showConnections = false;
+                showPortProperties = false;
+              }),
             child: const Text("Back",
                 style: TextStyle(
                     color: Color.fromARGB(255, 34, 36, 49),
@@ -456,6 +463,46 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
       ],
     );
   }
+
+  Widget _buildPortPropertiesUI() {
+    const cellTextStyle = TextStyle(fontSize: 12); // smaller text
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            columnSpacing: 16, // smaller gap between columns
+            columns: const [
+              DataColumn(label: Text("Port Name", style: TextStyle(fontSize: 12))),
+              DataColumn(label: Text("Connected To", style: TextStyle(fontSize: 12))),
+              DataColumn(label: Text("IP Address", style: TextStyle(fontSize: 12))),
+            ],
+            rows: widget.router.ports.map((port) {
+              String connectedTo = port.connectedPC?.name
+                  ?? port.connectedRouter?.name
+                  ?? port.connectedSwitch?.name
+                  ?? "None";
+
+              String ipAddress = port.ipAddress ?? "N/A";
+
+              return DataRow(cells: [
+                DataCell(Text(port.name, style: cellTextStyle)),
+                DataCell(Text(connectedTo, style: cellTextStyle)),
+                DataCell(Text(ipAddress, style: cellTextStyle)),
+              ]);
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+
+
 
   Widget _field(String label, TextEditingController controller, {bool readOnly = false}) {
     return Row(

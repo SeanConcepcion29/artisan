@@ -10,6 +10,9 @@ class PCConsole {
   String getPrompt() => "${pc.name}>";
 
 
+
+
+
   String processCommand(String input) {
     if (input.trim().isEmpty) return "";
 
@@ -20,8 +23,15 @@ class PCConsole {
       return _ping(args[1]);
     }
 
+    else if (cmd == "clear") {
+      pc.consoleHistory.clear();
+      return "";
+    }
+
     return "% Unknown command";
   }
+
+
 
 
 
@@ -31,18 +41,18 @@ class PCConsole {
     }
 
     const int initialTTL = 5; // only allow 5 hops
-    const int attempts = 5;   // number of echo requests
+    const int attempts = 1;   // number of echo requests
     int received = 0;
 
     final buffer = StringBuffer();
 
     for (int i = 0; i < attempts; i++) {
-      final forward = _traverseNetwork(pc.port, targetIP, {}, initialTTL);
+      final forward = _traverseNetwork(pc.port, targetIP, {});
 
       if (forward == PingResult.reachable) {
-        final reply = _traverseNetwork(pc.port, pc.ipAddress, {}, initialTTL);
+        //final reply = _traverseNetwork(pc.port, pc.ipAddress, {});
 
-        if (reply == PingResult.reachable) {
+        if (forward == PingResult.reachable) {
           buffer.writeln(
               "Reply from $targetIP: bytes=32 time<1ms TTL=$initialTTL");
           received++;
@@ -74,6 +84,10 @@ class PCConsole {
   }
 }
 
+
+
+
+
 enum PingResult { reachable, unreachable, ttlExpired }
 
 bool _sameSubnet(String ip1, String ip2, String mask) {
@@ -93,14 +107,12 @@ int _ipToInt(String ip) {
 
 
 
-
-
-PingResult _traverseNetwork(EthernetPort start, String targetIP, Set<EthernetPort> visited, int ttl) {
-  if (ttl <= 0) return PingResult.ttlExpired;
+PingResult _traverseNetwork(EthernetPort start, String targetIP, Set<EthernetPort> visited) {
+  //if (ttl <= 0) return PingResult.ttlExpired;
   if (visited.contains(start)) return PingResult.unreachable;
   visited.add(start);
 
-  if (kDebugMode) { print(start.id);}
+  if (kDebugMode) { print("${start.id} - ${start.ipAddress}");}
 
   // direct match on this port
   if (start.ipAddress == targetIP && start.isUp) {
@@ -113,19 +125,22 @@ PingResult _traverseNetwork(EthernetPort start, String targetIP, Set<EthernetPor
       return PingResult.reachable;
     }
 
-    final res = _traverseNetwork(start.connectedPC!.port, targetIP, visited, ttl);
+    final res = _traverseNetwork(start.connectedPC!.port, targetIP, visited);
     if (res != PingResult.unreachable) return res;
   }
+
 
   // connected Router
   if (start.connectedRouter != null) {
     final router = start.connectedRouter!;
 
-    // 1) check directly connected ports
+    // 1) check directly connected ports           ---- STOPS HERE
     for (final p in router.ports) {
       if (p.isUp) {
-        if (p.ipAddress == targetIP) return PingResult.reachable;
+        if (p.ipAddress == targetIP) { return PingResult.reachable; }
+
         if (p.connectedPC != null && p.connectedPC!.ipAddress == targetIP) {
+          if (kDebugMode) { print("DONE");}
           return PingResult.reachable;
         }
       }
@@ -135,7 +150,7 @@ PingResult _traverseNetwork(EthernetPort start, String targetIP, Set<EthernetPor
     for (final p in router.ports) {
       if (p.isUp && p.ipAddress != null && p.subnetMask != null) {
         if (_sameSubnet(p.ipAddress!, targetIP, p.subnetMask!)) {
-          final res = _traverseNetwork(p, targetIP, visited, ttl - 1); // TTL dec here
+          final res = _traverseNetwork(p, targetIP, visited);
           if (res != PingResult.unreachable) return res;
         }
       }
@@ -146,27 +161,30 @@ PingResult _traverseNetwork(EthernetPort start, String targetIP, Set<EthernetPor
       if (_sameSubnet(targetIP, route.destination, route.netmask)) {
         EthernetPort? gwPort;
         for (final p in router.ports) {
-          if (p.isUp &&
-              p.ipAddress != null &&
-              p.subnetMask != null &&
-              _sameSubnet(p.ipAddress!, route.gateway, p.subnetMask!)) {
+          if (p.isUp && p.ipAddress != null && p.subnetMask != null && _sameSubnet(p.ipAddress!, route.gateway, p.subnetMask!)) {
             gwPort = p;
             break;
           }
         }
+
         if (gwPort != null) {
-          final res = _traverseNetwork(gwPort, targetIP, visited, ttl - 1); // TTL dec
+          if (kDebugMode) { print("${gwPort.ipAddress}");}
+          final res = _traverseNetwork(gwPort, targetIP, visited);
           if (res != PingResult.unreachable) return res;
         }
       }
     }
   }
 
+
   // connected Switch (no TTL decrement)
   if (start.connectedSwitch != null) {
     for (final p in start.connectedSwitch!.ports) {
       if (p.isUp && p != start) {
-        final res = _traverseNetwork(p, targetIP, visited, ttl);
+        
+        if (kDebugMode) { print("Switch ${p.name}"); }
+
+        final res = _traverseNetwork(p, targetIP, visited);
         if (res != PingResult.unreachable) return res;
       }
     }

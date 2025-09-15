@@ -4,7 +4,6 @@ import 'package:artisan/devices/switch_device.dart';
 
 import 'package:uuid/uuid.dart';
 
-
 class EthernetPort {
   final String id;
   String name;
@@ -28,6 +27,8 @@ class EthernetPort {
     ipAddress = ip;
     subnetMask = mask;
     gateway = gw;
+    // stays DOWN until explicitly noShutdown()
+    isUp = false;
   }
 
   void noShutdown() {
@@ -56,7 +57,7 @@ class EthernetPort {
       'isUp': isUp,
       'ipAddress': ipAddress,
       'subnetMask': subnetMask,
-      'gateway': gateway,   // <--- persist gateway
+      'gateway': gateway,
       'name': name,
     };
   }
@@ -70,7 +71,7 @@ class EthernetPort {
     port.isUp = map['isUp'] ?? false;
     port.ipAddress = map['ipAddress'];
     port.subnetMask = map['subnetMask'];
-    port.gateway = map['gateway'];   // <--- restore gateway
+    port.gateway = map['gateway'];
     return port;
   }
 
@@ -78,11 +79,9 @@ class EthernetPort {
     isUp = map['isUp'] ?? false;
     ipAddress = map['ipAddress'];
     subnetMask = map['subnetMask'];
-    gateway = map['gateway'];   // <--- apply gateway
+    gateway = map['gateway'];
   }
 }
-
-
 
 /*** CONNECT PC TO ROUTER ***/
 bool connectPCToRouter(PCDevice pc, RouterDevice r1) {
@@ -96,6 +95,7 @@ bool connectPCToRouter(PCDevice pc, RouterDevice r1) {
   freePort.isFree = false;
   freePort.connectedPC = pc;
 
+  // stays DOWN until manually noShutdown()
   return true;
 }
 
@@ -110,6 +110,8 @@ bool connectRouterToRouter(RouterDevice r1, RouterDevice r2) {
 
     p1.connectedRouter = r2;
     p2.connectedRouter = r1;
+
+    // stays DOWN until manually noShutdown()
     return true;
   }
   return false;
@@ -123,9 +125,11 @@ bool connectPCToSwitch(PCDevice pc, SwitchDevice sw) {
 
   pc.port.isFree = false;
   pc.port.connectedSwitch = sw;
+  pc.port.isUp = true; // PC side UP because it's on a switch
 
   freePort.isFree = false;
   freePort.connectedPC = pc;
+  freePort.isUp = true; // switch side UP too
 
   return true;
 }
@@ -143,6 +147,9 @@ bool connectRouterToSwitch(RouterDevice r, SwitchDevice sw) {
   rPort.connectedSwitch = sw;
   sPort.connectedRouter = r;
 
+  rPort.isUp = true; // router side UP because connected to switch
+  sPort.isUp = true; // switch side UP
+
   return true;
 }
 
@@ -157,6 +164,10 @@ bool connectSwitchToSwitch(SwitchDevice s1, SwitchDevice s2) {
 
     p1.connectedSwitch = s2;
     p2.connectedSwitch = s1;
+
+    p1.isUp = true;
+    p2.isUp = true;
+
     return true;
   }
   
