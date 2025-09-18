@@ -1,13 +1,14 @@
 import 'package:artisan/devices/pc_device.dart';
 import 'package:artisan/devices/router_device.dart';
 import 'package:artisan/devices/switch_device.dart';
-
 import 'package:uuid/uuid.dart';
+
 
 class EthernetPort {
   final String id;
   String name;
 
+  /* determines if a port is free and/or active (up) */
   bool isFree = true;
   bool isUp = false;
   
@@ -19,26 +20,29 @@ class EthernetPort {
   RouterDevice? connectedRouter;
   SwitchDevice? connectedSwitch;
 
+  /* creates a unique id for each port */
   static final Uuid _uuid = Uuid();
-
   EthernetPort({String? id, required this.name}) : id = id ?? _uuid.v4();
 
+  /* FUNCTION that configures ip, subnet, gateway, and activeness of port */
   void assignIP(String ip, String mask, {String? gw}) {
     ipAddress = ip;
     subnetMask = mask;
     gateway = gw;
-    // stays DOWN until explicitly noShutdown()
     isUp = false;
   }
 
+  /* FUNCTION that toggles the port to be active */
   void noShutdown() {
     isUp = true;
   }
 
+  /* FUNCTION that toggles the port to be inactive */
   void shutdown() {
     isUp = false;
   }
 
+  /* FUNCTION that disconnects and resets port connections */
   void disconnect() {
     connectedPC = null;
     connectedRouter = null;
@@ -50,6 +54,7 @@ class EthernetPort {
     gateway = null;
   }
 
+  /* seriliazes port configurations */
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -62,6 +67,7 @@ class EthernetPort {
     };
   }
 
+  /* deseriliazes port configurations */
   factory EthernetPort.fromMap(Map<String, dynamic> map) {
     final port = EthernetPort(
       id: map['id'],
@@ -75,6 +81,7 @@ class EthernetPort {
     return port;
   }
 
+  /* loads port configuration */
   void applyFromMap(Map<String, dynamic> map) {
     isUp = map['isUp'] ?? false;
     ipAddress = map['ipAddress'];
@@ -83,7 +90,8 @@ class EthernetPort {
   }
 }
 
-/*** CONNECT PC TO ROUTER ***/
+
+/*FUNCTION that connects pc to router */
 bool connectPCToRouter(PCDevice pc, RouterDevice r1) {
   if (!pc.port.isFree) return false;
   final freePort = r1.getFreePort();
@@ -95,11 +103,11 @@ bool connectPCToRouter(PCDevice pc, RouterDevice r1) {
   freePort.isFree = false;
   freePort.connectedPC = pc;
 
-  // stays DOWN until manually noShutdown()
   return true;
 }
 
-/*** CONNECT ROUTER TO ROUTER ***/
+
+/*FUNCTION that connects router to router */
 bool connectRouterToRouter(RouterDevice r1, RouterDevice r2) {
   final p1 = r1.getFreePort();
   final p2 = r2.getFreePort();
@@ -111,13 +119,13 @@ bool connectRouterToRouter(RouterDevice r1, RouterDevice r2) {
     p1.connectedRouter = r2;
     p2.connectedRouter = r1;
 
-    // stays DOWN until manually noShutdown()
     return true;
   }
   return false;
 }
 
-/*** CONNECT PC TO SWITCH ***/
+
+/*FUNCTION that connects pc to switch */
 bool connectPCToSwitch(PCDevice pc, SwitchDevice sw) {
   if (!pc.port.isFree) return false;
   final freePort = sw.getFreePort();
@@ -125,16 +133,17 @@ bool connectPCToSwitch(PCDevice pc, SwitchDevice sw) {
 
   pc.port.isFree = false;
   pc.port.connectedSwitch = sw;
-  pc.port.isUp = true; // PC side UP because it's on a switch
+  pc.port.isUp = true; 
 
   freePort.isFree = false;
   freePort.connectedPC = pc;
-  freePort.isUp = true; // switch side UP too
+  freePort.isUp = true;
 
   return true;
 }
 
-/*** CONNECT ROUTER TO SWITCH ***/
+
+/*FUNCTION that connects router to switch */
 bool connectRouterToSwitch(RouterDevice r, SwitchDevice sw) {
   final rPort = r.getFreePort();
   final sPort = sw.getFreePort();
@@ -147,13 +156,14 @@ bool connectRouterToSwitch(RouterDevice r, SwitchDevice sw) {
   rPort.connectedSwitch = sw;
   sPort.connectedRouter = r;
 
-  rPort.isUp = true; // router side UP because connected to switch
-  sPort.isUp = true; // switch side UP
+  rPort.isUp = true;
+  sPort.isUp = true; 
 
   return true;
 }
 
-/*** CONNECT SWITCH TO SWITCH ***/
+
+/*FUNCTION that connects switch to switch */
 bool connectSwitchToSwitch(SwitchDevice s1, SwitchDevice s2) {
   final p1 = s1.getFreePort();
   final p2 = s2.getFreePort();

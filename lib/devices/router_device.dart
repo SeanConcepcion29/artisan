@@ -8,14 +8,15 @@ import 'package:artisan/pages/project_workspace.dart';
 class RouterDevice {
   String name;
 
+  /* initializes router ports */
   final List<EthernetPort> ports = [
     EthernetPort(name: "fast0/0"),
     EthernetPort(name: "fast0/1")
   ];
 
+  /* initializes and handles console and routing table */
   List<String> consoleHistory = [];
   final List<RouteEntry> routingTable = [];
-
   late RouterConsole console;
 
   RouterDevice({
@@ -24,6 +25,7 @@ class RouterDevice {
     console = RouterConsole(this);
   }
 
+  /* holds the interface and routes configuration */
   Map<String, dynamic> runningConfig = {
     "interfaces": <String, Map<String, dynamic>>{},
     "routes": <RouteEntry>[],
@@ -31,6 +33,8 @@ class RouterDevice {
 
   Map<String, dynamic> startupConfig = {};
 
+
+  /* converts RouterDevice object into a serializable map */
   Map<String, dynamic> toMap() {
     return {
       'name': name,
@@ -45,11 +49,14 @@ class RouterDevice {
     };
   }
 
+
+  /* creates a RouterDevice object from a map (deserialization) */
   factory RouterDevice.fromMap(Map<String, dynamic> map) {
     final router = RouterDevice(
       name: map['name'] ?? 'Router',
     );
 
+    /* restores console history, port settings, and routing configurations if available */
     router.consoleHistory = List<String>.from(map['consoleHistory'] ?? []);
 
     if (map['ports'] != null) {
@@ -77,7 +84,7 @@ class RouterDevice {
     return router;
   }
 
-
+  /* safely checks if the port is free */
   EthernetPort? getFreePort() {
     try {
       return ports.firstWhere((p) => p.isFree);
@@ -86,6 +93,7 @@ class RouterDevice {
     }
   }
 
+  /* FUNCTION that saves the configuration of the router */
   void saveConfig() {
     startupConfig = Map.from(runningConfig);
   }
@@ -99,6 +107,7 @@ class RouteEntry {
 
   RouteEntry(this.destination, this.netmask, this.gateway);
 
+  /* serializes route configruations */
   Map<String, dynamic> toMap() {
     return {
       'destination': destination,
@@ -107,6 +116,7 @@ class RouteEntry {
     };
   }
 
+  /* deserializes route configruations */
   factory RouteEntry.fromMap(Map<String, dynamic> map) {
     return RouteEntry(
       map['destination'] ?? '0.0.0.0',
@@ -142,16 +152,18 @@ class RouterConfigDialog extends StatefulWidget {
   State<RouterConfigDialog> createState() => _RouterConfigDialogState();
 }
 
+
 class _RouterConfigDialogState extends State<RouterConfigDialog> {
   late TextEditingController nameController;
   late TextEditingController _consoleController;
 
+  /* determines if user selects one of the menu buttons */
   bool showConfig = false;
   bool showConsole = false;
   bool showConnections = false;
   bool showPortProperties = false;
 
-
+  /* determines if the name has already been changed */
   late bool isNameEditable;
 
   @override
@@ -164,6 +176,7 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
     isNameEditable = widget.router.name == "Router";
   }
 
+
   @override
   void dispose() {
     nameController.dispose();
@@ -173,7 +186,6 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
 
   @override
   Widget build(BuildContext context) {
-
     final hasValidName = widget.router.name != "Router";
 
     return AlertDialog(
@@ -209,22 +221,18 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
                 showConnections = false;
                 showPortProperties = false;
               }),
-            child: const Text("Back",
-                style: TextStyle(
-                    color: Color.fromARGB(255, 34, 36, 49),
-                    fontWeight: FontWeight.bold)),
+            child: const Text("Back", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("Close",
-              style: TextStyle(
-                  color: Color.fromARGB(255, 34, 36, 49),
-                  fontWeight: FontWeight.bold)),
+          child: const Text("Close", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
         ),
       ],
     );
   }
 
+
+  /* WIDGET for the layout and logic of menu button */
   Widget _menuButton(String text, VoidCallback onPressed, {bool enabled = true}) {
     return SizedBox(
       width: double.infinity,
@@ -241,6 +249,8 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
     );
   }
 
+
+  /* WIDGET for building the configuration modal */
   Widget _buildConfigForm() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -264,6 +274,8 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
     );
   }
 
+
+  /* WIDGET for building the command-line interface */
   Widget _buildConsoleUI() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -331,7 +343,7 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
   }
 
 
-
+  /* WIDGET for building the connections modal where user can connect ports */
   Widget _buildConnectionsUI() {
     final availablePCs = widget.droppedItems
         .where((item) => item.pcConfig != null)
@@ -464,8 +476,10 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
     );
   }
 
+
+  /* WIDGET for building the table information of port properties */
   Widget _buildPortPropertiesUI() {
-    const cellTextStyle = TextStyle(fontSize: 12); // smaller text
+    const cellTextStyle = TextStyle(fontSize: 12); 
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -475,7 +489,7 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: DataTable(
-            columnSpacing: 16, // smaller gap between columns
+            columnSpacing: 16,
             columns: const [
               DataColumn(label: Text("Port Name", style: TextStyle(fontSize: 12))),
               DataColumn(label: Text("Connected To", style: TextStyle(fontSize: 12))),
@@ -502,8 +516,7 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
   }
 
 
-
-
+  /* WIDGET for the layout of text fields */
   Widget _field(String label, TextEditingController controller, {bool readOnly = false}) {
     return Row(
       children: [
@@ -526,11 +539,12 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
 
 
 
+
   /// --------------------------------
   /// HELPER FUNCTIONS
   /// --------------------------------
 
-
+  /* FUNCTION that handles CLI inputs */
   void _handleCommand(String cmd) {
     cmd = cmd.trim();
     if (cmd.isEmpty) return;

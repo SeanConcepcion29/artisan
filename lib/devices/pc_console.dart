@@ -9,8 +9,11 @@ class PCConsole {
 
   PCConsole(this.pc);
 
+  /* sets the prompt for pc CLI */
   String getPrompt() => "${pc.name}>";
 
+
+  /* FUNCTION that reads and processes cli input to determine command to execute */
   String processCommand(String input) {
     if (input.trim().isEmpty) return "";
 
@@ -30,6 +33,7 @@ class PCConsole {
   }
 
 
+  /* FUNCTION that performs the ping action */
   String _ping(List<String> args) {
     String targetIP = args[1];
 
@@ -37,8 +41,8 @@ class PCConsole {
       return "Cannot ping self.";
     }
 
-    int attempts = 5; 
-    int packetSize = 32; 
+    int attempts = 5;
+    int packetSize = 32;
 
     /*** PING OPTIONS ***/
     for (int i = 2; i < args.length; i++) {
@@ -61,37 +65,39 @@ class PCConsole {
     int lost = 0;
     final rtts = <int>[];
 
-
     /*** PING ACTION ***/
     for (int i = 0; i < attempts; i++) {
+
+      /* records the start time where the ping propagation begins */
+      final startTime = DateTime.now().microsecondsSinceEpoch;
+
+      /* performs a recursive traversing of the network connection */
       final res = _traverseNetwork(pc.port, targetIP, {}, initialTTL, isFirstAttempt: i == 0);
 
-
-      /*
-      // Simulate random packet loss (5% chance) /////////////////////////
-      if (rand.nextDouble() < 0.05) {
-        buffer.writeln("Request timed out.");
-        lost++;
-        continue;
-      }
-      */
+      /* records the end time where the ping result is gathered */
+      final endTime = DateTime.now().microsecondsSinceEpoch;
+      int elapsedMs = ((endTime - startTime) / 1000).round();
 
 
+      /*** PING REACHED ***/
       if (res == PingResult.reachable) {
-        int rtt = _simulateRTT(rand);
-        int ttlLeft = initialTTL - rand.nextInt(10); 
+        elapsedMs += rand.nextInt(3); 
 
+        int ttlLeft = initialTTL - rand.nextInt(10);
         buffer.writeln(
-            "Reply from $targetIP: bytes=$packetSize time=${rtt}ms TTL=$ttlLeft");
-        rtts.add(rtt);
+            "Reply from $targetIP: bytes=$packetSize time=${elapsedMs}ms TTL=$ttlLeft");
+
+        rtts.add(elapsedMs);
         received++;
       }
       
+      /*** PING EXPIRED ***/
       else if (res == PingResult.ttlExpired) {
         buffer.writeln("Request timed out. (TTL expired)");
         lost++;
       }
       
+      /*** PING UNREACHABLE ***/
       else {
         buffer.writeln("Destination host unreachable.");
         lost++;
@@ -106,6 +112,7 @@ class PCConsole {
     buffer.writeln(
         "    Packets: Sent = $attempts, Received = $received, Lost = $lost ($lossPercent% loss)");
 
+    /* calculates average round-trip time */
     if (rtts.isNotEmpty) {
       int minRtt = rtts.reduce(min);
       int maxRtt = rtts.reduce(max);
@@ -118,20 +125,14 @@ class PCConsole {
 
     buffer.writeln("");
     return buffer.toString().trim();
-
-
   }
 }
 
-
-/* RANDOM SIMULATOR */
-int _simulateRTT(Random rand) {
-  return 1 + rand.nextInt(30);
-}
-
-
+/* stores the result of the ping */
 enum PingResult { reachable, unreachable, ttlExpired }
 
+
+/* FUNCTION that determines if two of the ip addresses are of the same subnet */
 bool _sameSubnet(String ip1, String ip2, String mask) {
   int ip1Int = _ipToInt(ip1);
   int ip2Int = _ipToInt(ip2);
@@ -148,6 +149,7 @@ int _ipToInt(String ip) {
 }
 
 
+/* FUNCTION that performs a recursive traversal on the network to determine if the target is reachable from the starting node */
 PingResult _traverseNetwork(EthernetPort start, String targetIP, Set<EthernetPort> visited, int ttl, {bool isFirstAttempt = false}) {
   if (ttl <= 0) return PingResult.ttlExpired;
   if (visited.contains(start)) return PingResult.unreachable;

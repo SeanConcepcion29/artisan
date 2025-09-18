@@ -11,8 +11,10 @@ class PCDevice {
   String subnetMask;
   String defaultGateway;
 
+  /* initializes pc port */
   final EthernetPort port = EthernetPort(name: "eth0/0");
 
+  /* initializes and handles console */
   List<String> consoleHistory = [];
   late PCConsole console;
 
@@ -23,12 +25,12 @@ class PCDevice {
     required this.defaultGateway,
   }) {
     console = PCConsole(this);
-
     port.ipAddress = ipAddress;
     port.subnetMask = subnetMask;
     port.gateway = defaultGateway;
   }
 
+  /* converts PCDevice object into a serializable map */
   Map<String, dynamic> toMap() {
     return {
       'name': name,
@@ -40,6 +42,7 @@ class PCDevice {
     };
   }
 
+  /* creates a PCDevice object from a map (deserialization) */
   factory PCDevice.fromMap(Map<String, dynamic> map) {
     final pc = PCDevice(
       name: map['name'] ?? 'PC',
@@ -48,6 +51,7 @@ class PCDevice {
       defaultGateway: map['defaultGateway'] ?? '0.0.0.0',
     );
 
+    /* restores console history and port settings if available */
     pc.consoleHistory = List<String>.from(map['consoleHistory'] ?? []);
 
     if (map['port'] != null) {
@@ -57,6 +61,7 @@ class PCDevice {
     return pc;
   }
 }
+
 
 class PCConfigDialog extends StatefulWidget {
   final PCDevice pc;
@@ -79,6 +84,7 @@ class PCConfigDialog extends StatefulWidget {
   State<PCConfigDialog> createState() => _PCConfigDialogState();
 }
 
+
 class _PCConfigDialogState extends State<PCConfigDialog> {
   late TextEditingController nameController;
   late TextEditingController ipController;
@@ -86,12 +92,15 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
   late TextEditingController gatewayController;
   late TextEditingController _consoleController;
 
+  /* determines if user selects one of the menu buttons */
   bool showConfig = false;
   bool showPing = false;
   bool showConnections = false;
   bool showConsole = false;
 
+  /* determines if the name has already been changed */
   late bool isNameEditable;
+
 
   @override
   void initState() {
@@ -106,6 +115,7 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
     isNameEditable = widget.pc.name == "PC";
   }
 
+
   @override
   void dispose() {
     nameController.dispose();
@@ -115,6 +125,7 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
     _consoleController.dispose();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -152,8 +163,7 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
               showConnections = false;
               showConsole = false;
             }),
-            child: const Text("Back",
-                style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
+            child: const Text("Back", style: TextStyle(color: Color.fromARGB(255, 34, 36, 49), fontWeight: FontWeight.bold)),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context),
@@ -163,6 +173,8 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
     );
   }
 
+
+  /* WIDGET for the layout and logic of menu button */
   Widget _menuButton(String text, VoidCallback onPressed, {bool enabled = true}) {
     return SizedBox(
       width: double.infinity,
@@ -177,6 +189,8 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
     );
   }
 
+
+  /* WIDGET for building the configuration modal */
   Widget _buildConfigForm() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -212,6 +226,8 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
     );
   }
 
+
+  /* WIDGET for building the command-line interface for performing ping */
   Widget _buildPingUI() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -242,7 +258,9 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
             }).toList(),
           ),
         ),
+
         const SizedBox(height: 8),
+
         TextField(
           controller: _consoleController,
           style: const TextStyle(
@@ -266,7 +284,7 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
               onPressed: () {
                 final ip = _consoleController.text.trim();
                 if (ip.isNotEmpty) {
-                  _handlePingCommand("ping $ip");
+                  _handleCommand("ping $ip");
                   _consoleController.clear();
                 }
               },
@@ -274,9 +292,10 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
             hintText: "Enter IP address...",
             hintStyle: const TextStyle(color: Colors.grey, fontSize: 10),
           ),
+
           onSubmitted: (ip) {
             if (ip.trim().isNotEmpty) {
-              _handlePingCommand("ping $ip");
+              _handleCommand("ping $ip");
               _consoleController.clear();
             }
           },
@@ -285,6 +304,8 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
     );
   }
 
+
+  /* WIDGET for building the connections modal where user can connect ports */
   Widget _buildConnectionsUI() {
     final availableRouters = widget.droppedItems
         .where((item) => item.routerConfig != null)
@@ -381,6 +402,7 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
     );
   }
 
+  /* WIDGET for building the command-line interface */
   Widget _buildConsoleUI() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -442,8 +464,9 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
     );
   }
 
-  Widget _field(String label, TextEditingController controller,
-      {bool readOnly = false}) {
+
+  /* WIDGET for the layout of text fields */
+  Widget _field(String label, TextEditingController controller, {bool readOnly = false}) {
     return Row(
       children: [
         SizedBox(width: 120, child: Text(label)),
@@ -463,23 +486,16 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
     );
   }
 
+
+
+
+
   /// --------------------------------
   /// HELPER FUNCTIONS
   /// --------------------------------
 
+  /* FUNCTION that handles CLI inputs */
   void _handleCommand(String cmd) {
-    cmd = cmd.trim();
-    if (cmd.isEmpty) return;
-
-    setState(() {
-      widget.pc.consoleHistory.add("${widget.pc.console.getPrompt()} $cmd");
-      final output = widget.pc.console.processCommand(cmd);
-      if (output.isNotEmpty) widget.pc.consoleHistory.add(output);
-      _consoleController.clear();
-    });
-  }
-
-  void _handlePingCommand(String cmd) {
     cmd = cmd.trim();
     if (cmd.isEmpty) return;
 

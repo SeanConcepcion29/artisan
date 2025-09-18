@@ -1,7 +1,10 @@
 import 'package:artisan/devices/ethernet_port.dart';
 import 'router_device.dart';
 
+
+/* handles the different mode of router access */
 enum RouterMode { user, privileged, globalConfig, interfaceConfig }
+
 
 class RouterConsole {
   final RouterDevice router;
@@ -11,6 +14,7 @@ class RouterConsole {
 
   RouterConsole(this.router);
 
+  /* sets the prompt for router CLI */
   String getPrompt() {
     switch (_mode) {
       case RouterMode.user:
@@ -24,6 +28,7 @@ class RouterConsole {
     }
   }
 
+  /* FUNCTION that reads and processes cli input to determine command to execute */
   String processCommand(String input) {
     if (input.trim().isEmpty) return "";
 
