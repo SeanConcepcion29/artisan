@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:artisan/services/firestore_user.dart';
 
 class ProfilePage extends StatefulWidget {
-  final Map<String, dynamic> userData; // contains firstname, lastname, etc.
-
+  final Map<String, dynamic> userData; 
   const ProfilePage({Key? key, required this.userData}) : super(key: key);
 
   @override
@@ -15,6 +14,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final firestoreUsers = FirestoreUsers();
 
+  /* handles the text field for first name and last name */
   late TextEditingController firstNameController;
   late TextEditingController lastNameController;
 
@@ -36,16 +36,12 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center, // center vertically
-                crossAxisAlignment: CrossAxisAlignment.center, // center horizontally
+                mainAxisAlignment: MainAxisAlignment.center, 
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
      
-                  const Icon(
-                    Icons.account_circle_outlined,
-                    color: Colors.white,
-                    size: 200,
-                  ),
-
+                  /*** PROFILE ICON AND NAME ***/
+                  const Icon(Icons.account_circle_outlined, color: Colors.white, size: 200),
                   const SizedBox(height: 10),
 
                   Text(
@@ -58,26 +54,22 @@ class _ProfilePageState extends State<ProfilePage> {
                     style: const TextStyle(color: Colors.white, fontSize: 18),
                   ),
 
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 50),
 
 
+                  /*** FIRST AND LAST NAME TEXT FIELDS ***/
                   TextField(
                     controller: firstNameController,
                     style: const TextStyle(color: Colors.white),
                     decoration: const InputDecoration(
                       labelText: "First Name",
                       labelStyle: TextStyle(color: Colors.white70),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: Colors.white54),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: Colors.white),
-                      ),
+                      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white54)),
+                      focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
                     ),
                   ),
 
                   const SizedBox(height: 12),
-
 
                   TextField(
                     controller: lastNameController,
@@ -85,35 +77,30 @@ class _ProfilePageState extends State<ProfilePage> {
                     decoration: const InputDecoration(
                       labelText: "Last Name",
                       labelStyle: TextStyle(color: Colors.white70),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: Colors.white54),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: Colors.white),
-                      ),
+                      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white54)),
+                      focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
 
-
+                  /*** CHANGE NAME BUTTON ***/
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       ),
                       onPressed: () async {
                         await firestoreUsers.updateName(
-                          widget.userData['email'], // 🔑 using email as identifier
+                          widget.userData['email'],
                           firstNameController.text,
                           lastNameController.text,
                         );
+
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Name updated! Changes will appear on restart.")),
                         );
@@ -122,52 +109,68 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
-                  // Back button
+
+                  /*** LOG OUT BUTTON ***/
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       ),
                       onPressed: () {
-                        Navigator.pop(context); // go back
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => LogInPage()),
+                          (route) => false, 
+                        );
                       },
+                      child: const Text("LOG OUT", style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),      
+
+                  const SizedBox(height: 12),         
+
+
+                  /*** BACK BUTTON ***/
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                      onPressed: () { Navigator.pop(context); },
                       child: const Text("BACK", style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
 
                   const SizedBox(height: 48),
 
-
+                
+                  /*** DELETE ACCOUNT BUTTOn ***/
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       ),
+
                       onPressed: () async {
                         final firestoreUsers = FirestoreUsers();
                         await firestoreUsers.deleteUser(widget.userData['email']);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => LogInPage(),
-                          ),
-                        );
+                        Navigator.push(context, MaterialPageRoute( builder: (context) => LogInPage()));
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Account deleted")),
                         );
                       },
+
                       child: const Text("DELETE ACCOUNT", style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),

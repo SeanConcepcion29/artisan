@@ -2,23 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:artisan/services/firestore_user.dart';
 import 'home.dart';
 
+
 class SignUpPage extends StatefulWidget {
   @override
   State<SignUpPage> createState() => _SignUpPageState();
 }
 
+
 class _SignUpPageState extends State<SignUpPage> {
   final firestoreUsers = FirestoreUsers();
 
+  /* handles the text field for email, password, and name */
   final TextEditingController firstNameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController lastNameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController nameController = TextEditingController();
 
   String? errorMessage;
   bool isLoading = false;
 
+
+  /* FUNCTION that signs up the user */
   Future<void> signUp() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
@@ -43,10 +47,8 @@ class _SignUpPageState extends State<SignUpPage> {
         password: password,
       );
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage(userEmail: email)),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage(userEmail: email)));
+
     } catch (e) {
       setState(() => errorMessage = e.toString());
     } finally {
@@ -64,6 +66,8 @@ class _SignUpPageState extends State<SignUpPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+
+            /*** WELCOME TITLE ***/
             Align(
               alignment: Alignment.centerLeft,
               child: const Text(
@@ -76,10 +80,10 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
               ),
             ),
-
             const SizedBox(height: 100),
 
-            // Name
+
+            /*** FIRST NAME TEXT FIELD ***/
             TextField(
               controller: firstNameController,
               style: const TextStyle(color: Colors.white),
@@ -87,16 +91,14 @@ class _SignUpPageState extends State<SignUpPage> {
                 hintText: "First Name",
                 hintStyle: TextStyle(color: Colors.white70),
                 prefixIcon: Icon(Icons.person_outline, color: Colors.white70),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white70),
-                ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white),
-                ),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
+                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
               ),
             ),
             const SizedBox(height: 20),
 
+
+            /*** LAST NAME TEXT FIELD ***/
             TextField(
               controller: lastNameController,
               style: const TextStyle(color: Colors.white),
@@ -104,18 +106,14 @@ class _SignUpPageState extends State<SignUpPage> {
                 hintText: "Last Name",
                 hintStyle: TextStyle(color: Colors.white70),
                 prefixIcon: Icon(Icons.person, color: Colors.white70),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white70),
-                ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white),
-                ),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
+                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
               ),
             ),
             const SizedBox(height: 20),
 
 
-            // Email
+            /*** LAST NAME TEXT FIELD ***/
             TextField(
               controller: emailController,
               style: const TextStyle(color: Colors.white),
@@ -123,17 +121,14 @@ class _SignUpPageState extends State<SignUpPage> {
                 hintText: "Email",
                 hintStyle: TextStyle(color: Colors.white70),
                 prefixIcon: Icon(Icons.email_outlined, color: Colors.white70),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white70),
-                ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white),
-                ),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
+                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
               ),
             ),
             const SizedBox(height: 20),
 
-            // Password
+
+            /*** PASSWORD TEXT FIELD ***/
             TextField(
               controller: passwordController,
               obscureText: true,
@@ -142,53 +137,42 @@ class _SignUpPageState extends State<SignUpPage> {
                 hintText: "Password",
                 hintStyle: TextStyle(color: Colors.white70),
                 prefixIcon: Icon(Icons.lock_outline, color: Colors.white70),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white70),
-                ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white),
-                ),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
+                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
               ),
             ),
             const SizedBox(height: 20),
 
-            // Error + Button
+
+            /*** ERROR MESSAGE & SIGN UP BUTTON***/
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+
+                /*** ERROR MESSAGE ***/
                 Expanded(
                   child: errorMessage != null
                       ? Text(
                           errorMessage!,
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 12,
-                          ),
+                          style: const TextStyle(color: Colors.red, fontSize: 12),
                           overflow: TextOverflow.ellipsis,
                         )
                       : const SizedBox(),
                 ),
+
+                /*** SIGN UP BUTTON ***/
                 SizedBox(
                   width: 110,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                     onPressed: isLoading ? null : signUp,
                     child: isLoading
-                        ? const SizedBox(
-                            height: 18,
-                            width: 36,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text(
-                            "SIGN UP",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
+                        ? const SizedBox( height: 18, width: 36, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Text("SIGN UP", style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],

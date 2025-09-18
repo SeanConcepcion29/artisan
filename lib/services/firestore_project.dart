@@ -1,10 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FirestoreProjects {
-  final CollectionReference projectsCollection =
-      FirebaseFirestore.instance.collection('projects');
 
-  // CREATE NEW PROJECT
+  final CollectionReference projectsCollection =  FirebaseFirestore.instance.collection('projects');
+
+
+  /* CREATES new project */
   Future<void> createProject({
     required String email,
     required String owner,
@@ -33,54 +34,8 @@ class FirestoreProjects {
     });
   }
 
-  // GET ALL PROJECTS BY EMAIL
-  Future<List<Map<String, dynamic>>> getAllProjectsByEmail(String email) async {
-    final querySnapshot =
-        await projectsCollection.where('email', isEqualTo: email).get();
 
-    return querySnapshot.docs
-        .map((doc) => {
-              'id': doc.id,
-              ...doc.data() as Map<String, dynamic>,
-            })
-        .toList();
-  }
-
-  // 🚀 GET ALL PUBLIC PROJECTS
-  Future<List<Map<String, dynamic>>> getAllPublicProjects() async {
-    final querySnapshot =
-        await projectsCollection.where('public', isEqualTo: true).get();
-
-    return querySnapshot.docs
-        .map((doc) => {
-              'id': doc.id,
-              ...doc.data() as Map<String, dynamic>,
-            })
-        .toList();
-  }
-
-  // UPDATE DATE MODIFIED TO CURRENT DATE
-  Future<void> updateDateModified(String docId) async {
-    final now = DateTime.now();
-    await projectsCollection.doc(docId).update({
-      'datemodified': Timestamp.fromDate(now),
-    });
-  }
-
-  // ✅ UPDATE PROJECT TITLE
-  Future<void> updateProjectTitle(String docId, String newTitle) async {
-    final now = DateTime.now();
-    await projectsCollection.doc(docId).update({
-      'title': newTitle,
-      'datemodified': Timestamp.fromDate(now),
-    });
-  }
-
-  // ✅ DELETE PROJECT
-  Future<void> deleteProject(String docId) async {
-    await projectsCollection.doc(docId).delete();
-  }
-
+  /* READS and retrieve specific project based on id */
   Future<Map<String, dynamic>?> getProjectById(String docId) async {
     final docSnapshot = await projectsCollection.doc(docId).get();
 
@@ -93,7 +48,59 @@ class FirestoreProjects {
     return null;
   }
 
-    /// Add member by email
+
+  /* READS and retrieve all projects of specific user via email */
+  Future<List<Map<String, dynamic>>> getAllProjectsByEmail(String email) async {
+    final ownedQuery = await projectsCollection.where('email', isEqualTo: email).get();
+    final collabQuery = await projectsCollection.where('collabs', arrayContains: email).get();
+
+    final allDocs = [...ownedQuery.docs, ...collabQuery.docs];
+
+    /* removes duplicates (in case user is both owner and collab) */
+    final uniqueDocs = {for (var doc in allDocs) doc.id: doc}.values.toList();
+
+    return uniqueDocs
+        .map((doc) => {'id': doc.id, ...doc.data() as Map<String, dynamic>})
+        .toList();
+  }
+
+
+  /* READS and retrieve all public projects */
+  Future<List<Map<String, dynamic>>> getAllPublicProjects() async {
+    final querySnapshot = await projectsCollection.where('public', isEqualTo: true).get();
+
+    return querySnapshot.docs
+        .map((doc) => {'id': doc.id, ...doc.data() as Map<String, dynamic>})
+        .toList();
+  }
+
+
+  /* UPDATES the date modified attribute of the project */
+  Future<void> updateDateModified(String docId) async {
+    final now = DateTime.now();
+    await projectsCollection.doc(docId).update({
+      'datemodified': Timestamp.fromDate(now),
+    });
+  }
+
+
+  /* UPDATES the title attribute of the project */
+  Future<void> updateProjectTitle(String docId, String newTitle) async {
+    final now = DateTime.now();
+    await projectsCollection.doc(docId).update({
+      'title': newTitle,
+      'datemodified': Timestamp.fromDate(now),
+    });
+  }
+
+
+  /* DELETES the project */
+  Future<void> deleteProject(String docId) async {
+    await projectsCollection.doc(docId).delete();
+  }
+
+
+  /* ADDS new member to the collabs attribute of a project */
   Future<void> addMember(String projectId, String email) async {
     if (email.isEmpty) return;
     await projectsCollection.doc(projectId).update({
@@ -101,7 +108,8 @@ class FirestoreProjects {
     });
   }
 
-  /// Toggle public/private
+
+  /* TOGGLES public/private measures of a project */
   Future<void> updatePublic(String projectId, bool public) async {
     await projectsCollection.doc(projectId).update({
       "public": public,

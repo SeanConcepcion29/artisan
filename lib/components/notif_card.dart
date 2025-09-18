@@ -14,6 +14,7 @@ class NotificationCard extends StatelessWidget {
     required this.date,
   }) : super(key: key);
 
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -29,43 +30,28 @@ class NotificationCard extends StatelessWidget {
 
           Row(
             children: [
-              // Date
+              
+              /*** NOTIFICATION MESSAGE ***/
               Expanded(
-                child: Text(
-                  "$message",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ), 
+                child: Text(message, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)), 
               ),
 
-
-          opened == false
-              ? Icon(
-                  Icons.circle,
-                  color: Colors.red,
-                  size: 16, // small red dot
-                )
-              : const SizedBox.shrink(), // show nothing
-
+              /*** OPENED PROMPT ***/
+              opened == false
+                ? Icon(Icons.circle, color: Colors.red, size: 16)
+                : const SizedBox.shrink(),
             ],
           ),
 
+          /*** NOTIFICATION DETAILS ***/
           Text( 
             "$email\n"
             "$date",
             style: const TextStyle(color: Colors.white70, fontSize: 12),
             overflow: TextOverflow.ellipsis,
           ),
-              
-
-
-
         ],
       ),
-
     );
   }
 }

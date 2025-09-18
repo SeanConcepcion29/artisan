@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+
 class ProjectCard extends StatelessWidget {
   final Map<String, dynamic> project;
   final bool isEditMode;
@@ -14,10 +15,12 @@ class ProjectCard extends StatelessWidget {
     this.onEdit,
   });
 
+
   @override
   Widget build(BuildContext context) {
     final title = project['title'] ?? "Untitled Project";
 
+    /* FUNCTION that reformats the date into dd/mm/yyyy */
     String formatDate(dynamic ts) {
       if (ts == null) return "N/A";
       try {
@@ -40,7 +43,8 @@ class ProjectCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title + Edit/Delete actions
+          
+          /*** PROJECT TITLE ***/
           Row(
             children: [
               Expanded(
@@ -58,9 +62,11 @@ class ProjectCard extends StatelessWidget {
 
           const SizedBox(height: 6),
 
-          // Dates + Solo/Group icon
+          /*** PROJECT DETAILS, MEMBER ICON, & EDIT/DELETE BUTTONS ***/
           Row(
             children: [
+
+              /*** PROJECT DETAILS ***/
               Expanded(
                 child: Text(
                   "Last Modified: ${formatDate(project['datemodified'])}\n"
@@ -70,6 +76,7 @@ class ProjectCard extends StatelessWidget {
                 ),
               ),
 
+              /*** EDIT/DELETE BUTTONS ***/
               if (isEditMode) ...[
                 IconButton(
                   icon: const Icon(Icons.edit, color: Colors.white),
@@ -79,17 +86,18 @@ class ProjectCard extends StatelessWidget {
                   icon: const Icon(Icons.delete, color: Colors.red),
                   onPressed: onDelete,
                 ),
-              ] else ...[
-                Icon(
-                project['solo'] == true
-                    ? Icons.person_outline
-                    : Icons.group_outlined,
-                color: Colors.white70,
-                size: 20,
-              ),      
               ]
-
-
+              
+               /*** MEMBER ICON ***/
+              else ...[
+                Icon(
+                  (project['collabs'] == null || (project['collabs'] as List).isEmpty) 
+                      ? Icons.person_outline  
+                      : Icons.group_outlined, 
+                  color: Colors.white70,
+                  size: 20,
+                ),
+              ]
             ],
           ),
         ],
