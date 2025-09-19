@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:artisan/pages/details.dart';
+
 
 class GuidePage extends StatelessWidget {
   const GuidePage({super.key});
+
 
   @override
   Widget build(BuildContext context) {
@@ -11,70 +14,42 @@ class GuidePage extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
         child: ListView(
           children: [
-            // FAQ Section
-            _buildSection("Frequently Asked Questions", [
-              {
-                "title": "What is Cisco Packet Tracer?",
-                "desc": "A powerful network simulation tool used to design, configure, and troubleshoot networks."
-              },
-              {
-                "title": "Is Packet Tracer free?",
-                "desc": "Yes. It is free for Cisco Networking Academy students and available for download after registration."
-              },
-              {
-                "title": "Can Packet Tracer replace real hardware?",
-                "desc": "No. It is mainly for learning and practice, not a full replacement for physical devices."
-              },
+            
+            /*** FREQUENTLY ASKED QUESTIONS ***/
+            _buildSection(context, "Frequently Asked Questions", [
+              { "index": 0, "title": "What is Cisco Packet Tracer?" },
+              { "index": 1, "title": "Is Packet Tracer free?" },
+              { "index": 2, "title": "Can Packet Tracer replace real hardware?" }
             ]),
 
-            // Network Devices Section
-            _buildSection("Network Devices", [
-              {
-                "title": "Routers",
-                "desc": "Forward data packets between different networks based on IP addresses."
-              },
-              {
-                "title": "Switches",
-                "desc": "Send data directly to the specific device (based on MAC addresses)."
-              }
+            /*** NETWORK DEVICES ***/
+            _buildSection(context, "Network Devices", [
+              { "index": 3, "title": "Routers" },
+              { "index": 4, "title": "Switches" }
             ]),
 
-            // End Devices
-            _buildSection("End Devices", [
-              {
-                "title": "PCs",
-                "desc": "General end-user computers used to test and configure networks."
-              },
-              {
-                "title": "Servers",
-                "desc": "Provide services like DHCP, DNS, HTTP, Email, or FTP in simulations."
-              }
+            /*** END DEVICES ***/
+            _buildSection(context, "End Devices", [
+              { "index": 5, "title": "PCs" },
+              { "index": 6, "title": "Servers" }
             ]),
 
-
-            // Tool Bar
-            _buildSection("Tool Bar", [
-              {
-                "title": "Select Tool",
-                "desc": "Used to select and move devices."
-              },
-              {
-                "title": "Delete Tool",
-                "desc": "Removes devices or connections from the workspace."
-              },
-              {
-                "title": "Inspect Tool",
-                "desc": "Opens a device to configure settings (CLI or GUI)."
-              }
+            /*** TOOL BAR ***/
+            _buildSection(context, "Tool Bar", [
+              { "index": 7, "title": "Select Tool" },
+              { "index": 8, "title": "Delete Tool" },
+              { "index": 9, "title": "Inspect Tool" }
             ]),
+
           ],
         ),
       ),
     );
   }
 
-  // Reusable Section Builder
-  Widget _buildSection(String title, List<Map<String, String>> items) {
+
+  /* WIDGET for the guide cards */
+  Widget _buildSection(BuildContext context, String title, List<Map<String, dynamic>> items) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -103,39 +78,25 @@ class GuidePage extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Title + Description
+                
+                /*** TITLE ***/
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item["title"]!,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        item["desc"]!,
-                        style: const TextStyle(
-                            color: Colors.white70, fontSize: 12),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
+                  child: Text(item["title"], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                 ),
 
-                // Learn More Button
+                /*** LEARN MORE ***/
                 TextButton(
                   onPressed: () {
-                    // TODO: Navigate to a detail page for this item
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DetailsPage(index: item["index"]),
+                      ),
+                    );
                   },
-                  child: const Text(
-                    "Learn More",
-                    style: TextStyle(color: Colors.purpleAccent, fontSize: 12),
-                  ),
+                  child: const Text("Learn More", style: TextStyle(color: Colors.purpleAccent, fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
+
               ],
             ),
           );

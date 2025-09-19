@@ -178,19 +178,16 @@ class _HomePageState extends State<HomePage> {
 
                   /*** LEFT PROJECT SETTING ICON ***/
                   InkWell(
-                    onTap: () {
-                      if (_selectedIndex == 0) {
-                        setState(() {
-                          _isEditMode = !_isEditMode;
-                        });
-                      }
-                    },
+                    onTap: _selectedIndex == 0
+                        ? () { setState(() { _isEditMode = !_isEditMode; }); }
+                        : null, 
                     child: Icon(
                       _isEditMode && _selectedIndex == 0 ? Icons.hexagon : Icons.hexagon_outlined,
-                      color: Colors.white,
+                      color: _selectedIndex == 0 ? Colors.white : Color.fromRGBO(255, 255, 255, 0.4),
                       size: 28,
                     ),
                   ),
+
 
                   /*** APP TITLE ***/
                   const Text("ARTISAN", style: TextStyle(color: Colors.white, fontSize: 20, letterSpacing: 16)),
