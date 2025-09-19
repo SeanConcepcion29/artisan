@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FirestoreNotifications {
-
   final CollectionReference notifications = FirebaseFirestore.instance.collection('notifications');
 
 
@@ -15,7 +14,9 @@ class FirestoreNotifications {
     required bool opened,
     required DateTime date,
   }) async {
-    await notifications.add({
+    final docRef = notifications.doc(); 
+    await docRef.set({
+      "id": docRef.id,
       "projectName": projectName,
       "projectId": projectId,
       "from": from,
@@ -27,7 +28,7 @@ class FirestoreNotifications {
   }
 
 
-  /* CREATES new notification for multiple recipients */
+  /* CREATES new notifications for multiple recipients */
   Future<void> createNotificationsForRecipients({
     String projectName = "",
     String projectId = "",
@@ -50,13 +51,17 @@ class FirestoreNotifications {
   }
 
 
-  /* READS and retrieve notification list for a specific user */
+  /* READS and retrieves notifications for a specific user */
   Future<List<Map<String, dynamic>>> getNotificationsByRecipient(String email) async {
-    final query = await notifications.where("recipient", isEqualTo: email).get();
+    final query = await notifications
+        .where("recipient", isEqualTo: email)
+        .get();
 
     final notificationsList = query.docs.map((doc) {
       final data = doc.data() as Map<String, dynamic>;
+
       return {
+        "id": data["id"] ?? doc.id,
         "projectName": data["projectName"],
         "projectId": data["projectId"],
         "from": data["from"],
@@ -69,5 +74,11 @@ class FirestoreNotifications {
 
     notificationsList.sort((a, b) => b["date"].compareTo(a["date"]));
     return notificationsList;
+  }
+
+
+  /* UPDATES a notification as opened */
+  Future<void> markAsOpened(String notificationId) async {
+    await notifications.doc(notificationId).update({"opened": true});
   }
 }

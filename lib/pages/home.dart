@@ -249,10 +249,22 @@ class _HomePageState extends State<HomePage> {
                     itemCount: sharedProjects.length,
                     itemBuilder: (context, index) {
                       final project = sharedProjects[index];
-                      return SharedProjectCard(
-                        projectId: project['id'],
-                        userEmail: userData!['email'],
-                        project: project,
+                      final projectName = project['title'] ?? "Untitled Project";
+                      final projectId = project['id'] ?? "unknown_id";
+
+                      return InkWell(
+                        onTap: () {
+                          if (_isEditMode) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => ProjectWorkspacePage(projectName: projectName, projectId: projectId, currentUserEmail: widget.userEmail)),
+                          );
+                        },
+                        child: SharedProjectCard(
+                          projectId: project['id'],
+                          userEmail: userData!['email'],
+                          project: project,
+                        ),
                       );
                     },
                   ),
@@ -269,8 +281,12 @@ class _HomePageState extends State<HomePage> {
                     itemBuilder: (context, index) {
                       final notif = userNotifications[index];
                       return NotificationCard(
+                        id: notif['id'] ?? "Unknown",
                         email: notif['from'] ?? "Unknown",
                         message: notif['message'] ?? "",
+                        projectId: notif['projectId'],
+                        projectName: notif['projectName'],
+                        userEmail: notif['recipient'],
                         opened: notif['opened'] ?? false,
                         date: notif['date'] as DateTime,
                       );
