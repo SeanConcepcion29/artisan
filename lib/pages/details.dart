@@ -15,12 +15,58 @@ class DetailsPage extends StatelessWidget {
     {
       "title": "Is Packet Tracer free?",
       "desc": "Yes. It is free for Cisco Networking Academy students and available for download after registration.",
-      "image": "[ IMAGE HERE ]"
+      "image": 'assets/detail_images/router.png'
     },
     {
       "title": "Can Packet Tracer replace real hardware?",
       "desc": "No. It is mainly for learning and practice, not a full replacement for physical devices.",
-      "image": "[ IMAGE HERE ]"
+      "image": 'assets/detail_images/router.png'
+    },
+
+
+    {
+      "title": "Router Device",
+      "desc": "A powerful network simulation tool used to design, configure, and troubleshoot networks.",
+      "image": 'assets/detail_images/router.png'
+    },
+    {
+      "title": "Switch Device",
+      "desc": "Yes. It is free for Cisco Networking Academy students and available for download after registration.",
+      "image": 'assets/detail_images/swtich.png'
+    },
+
+
+    {
+      "title": "PC Device",
+      "desc": "A powerful network simulation tool used to design, configure, and troubleshoot networks.",
+      "image": 'assets/detail_images/pc.png'
+    },
+    {
+      "title": "Server Device",
+      "desc": "Yes. It is free for Cisco Networking Academy students and available for download after registration.",
+      "image": 'assets/detail_images/server.png'
+    },
+
+
+    {
+      "title": "Select Tool",
+      "desc": "A powerful network simulation tool used to design, configure, and troubleshoot networks.",
+      "image": 'assets/detail_images/select.png'
+    },
+    {
+      "title": "Inspect Tool",
+      "desc": "Yes. It is free for Cisco Networking Academy students and available for download after registration.",
+      "image": 'assets/detail_images/inspect.png'
+    },
+        {
+      "title": "Delete Tool",
+      "desc": "A powerful network simulation tool used to design, configure, and troubleshoot networks.",
+      "image": 'assets/detail_images/delete.png'
+    },
+    {
+      "title": "Add Note Tool",
+      "desc": "Yes. It is free for Cisco Networking Academy students and available for download after registration.",
+      "image": 'assets/detail_images/add_note.png'
     },
   ];
 
@@ -91,7 +137,7 @@ class DetailsPage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                         child: Image.asset(
                           item["image"]!,
-                          height: MediaQuery.of(context).size.height * 0.3, 
+                          height: MediaQuery.of(context).size.height * 0.2, 
                           width: double.infinity,
                           fit: BoxFit.cover,
                         ),
@@ -103,7 +149,7 @@ class DetailsPage extends StatelessWidget {
                       Text(
                         item["title"]!,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
                       ),
 
                       const SizedBox(height: 8),

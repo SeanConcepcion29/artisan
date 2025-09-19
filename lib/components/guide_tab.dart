@@ -24,21 +24,22 @@ class GuidePage extends StatelessWidget {
 
             /*** NETWORK DEVICES ***/
             _buildSection(context, "Network Devices", [
-              { "index": 3, "title": "Routers" },
-              { "index": 4, "title": "Switches" }
+              { "index": 3, "title": "Router Device" },
+              { "index": 4, "title": "Switch Device" }
             ]),
 
             /*** END DEVICES ***/
             _buildSection(context, "End Devices", [
-              { "index": 5, "title": "PCs" },
-              { "index": 6, "title": "Servers" }
+              { "index": 5, "title": "PC Device" },
+              { "index": 6, "title": "Server Device" }
             ]),
 
             /*** TOOL BAR ***/
             _buildSection(context, "Tool Bar", [
               { "index": 7, "title": "Select Tool" },
-              { "index": 8, "title": "Delete Tool" },
-              { "index": 9, "title": "Inspect Tool" }
+              { "index": 8, "title": "Inspect Tool" },
+              { "index": 9, "title": "Delete Tool" },
+              { "index": 10, "title": "Add Note Tool" }
             ]),
 
           ],
@@ -67,9 +68,17 @@ class GuidePage extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        children: items.map((item) {
+        children: items.asMap().entries.map((entry) {
+          final index = entry.key;
+          final item = entry.value;
+
           return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            margin: EdgeInsets.only(
+              left: 8,
+              right: 8,
+              top: 4,
+              bottom: index == items.length - 1 ? 16 : 4, 
+            ),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               border: Border.all(color: Colors.white, width: 1.5),
@@ -81,7 +90,13 @@ class GuidePage extends StatelessWidget {
                 
                 /*** TITLE ***/
                 Expanded(
-                  child: Text(item["title"], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                  child: Text(
+                    item["title"],
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
 
                 /*** LEARN MORE ***/
@@ -94,9 +109,15 @@ class GuidePage extends StatelessWidget {
                       ),
                     );
                   },
-                  child: const Text("Learn More", style: TextStyle(color: Colors.purpleAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    "Learn More",
+                    style: TextStyle(
+                      color: Colors.purpleAccent,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-
               ],
             ),
           );
@@ -104,4 +125,5 @@ class GuidePage extends StatelessWidget {
       ),
     );
   }
+
 }
