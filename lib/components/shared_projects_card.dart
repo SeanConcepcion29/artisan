@@ -93,6 +93,8 @@ class _SharedProjectCardState extends State<SharedProjectCard> {
                 ),
               ),
 
+              const SizedBox(height: 6),
+
               Row(
                 children: [
 

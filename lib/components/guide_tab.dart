@@ -17,29 +17,30 @@ class GuidePage extends StatelessWidget {
             
             /*** FREQUENTLY ASKED QUESTIONS ***/
             _buildSection(context, "Frequently Asked Questions", [
-              { "index": 0, "title": "What is Cisco Packet Tracer?" },
-              { "index": 1, "title": "Is Packet Tracer free?" },
-              { "index": 2, "title": "Can Packet Tracer replace real hardware?" }
+              { "index": 0, "title": "How to use Artisan app?" },
+              { "index": 1, "title": "Why use Artisan app?" },
+              { "index": 2, "title": "Is Artisan equal to real hardware?" },
+              { "index": 3, "title": "About the developer" }
             ]),
 
             /*** NETWORK DEVICES ***/
             _buildSection(context, "Network Devices", [
-              { "index": 3, "title": "Router Device" },
-              { "index": 4, "title": "Switch Device" }
+              { "index": 4, "title": "Router Device" },
+              { "index": 5, "title": "Switch Device" }
             ]),
 
             /*** END DEVICES ***/
             _buildSection(context, "End Devices", [
-              { "index": 5, "title": "PC Device" },
-              { "index": 6, "title": "Server Device" }
+              { "index": 6, "title": "PC Device" },
+              { "index": 7, "title": "Server Device" }
             ]),
 
             /*** TOOL BAR ***/
             _buildSection(context, "Tool Bar", [
-              { "index": 7, "title": "Select Tool" },
-              { "index": 8, "title": "Inspect Tool" },
-              { "index": 9, "title": "Delete Tool" },
-              { "index": 10, "title": "Add Note Tool" }
+              { "index": 8, "title": "Select Tool" },
+              { "index": 9, "title": "Inspect Tool" },
+              { "index": 10, "title": "Delete Tool" },
+              { "index": 11, "title": "Add Note Tool" }
             ]),
 
           ],

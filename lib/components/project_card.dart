@@ -91,9 +91,7 @@ class ProjectCard extends StatelessWidget {
                /*** MEMBER ICON ***/
               else ...[
                 Icon(
-                  (project['collabs'] == null || (project['collabs'] as List).isEmpty) 
-                      ? Icons.person_outline  
-                      : Icons.group_outlined, 
+                  (project['collabs'] == null || (project['collabs'] as List).isEmpty) ? Icons.person_outline : Icons.group_outlined, 
                   color: Colors.white70,
                   size: 20,
                 ),
