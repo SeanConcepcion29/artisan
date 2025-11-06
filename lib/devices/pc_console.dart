@@ -118,7 +118,6 @@ class PCConsole {
       int maxRtt = rtts.reduce(max);
       int avgRtt = rtts.reduce((a, b) => a + b) ~/ rtts.length;
 
-      buffer.writeln("Approximate round trip times in milli-seconds:");
       buffer.writeln(
           "    Minimum = ${minRtt}ms, Maximum = ${maxRtt}ms, Average = ${avgRtt}ms");
     }
@@ -224,8 +223,47 @@ PingResult _traverseNetwork(EthernetPort start, String targetIP, Set<EthernetPor
     }
   }
 
-
+  
   /*** SWITCH CONNECTED ***/
+  if (start.connectedSwitch != null) {
+    for (final p in start.connectedSwitch!.ports) {
+      if (p.isUp && p != start) {
+
+        /* checks for VLAN match */
+        if (p.vlanId != start.vlanId) continue;
+
+        String? otherIp;
+        String? otherMask;
+
+        if (p.connectedPC != null && p.connectedPC?.port.ipAddress == targetIP) {
+          return PingResult.reachable;
+        }
+
+        else if (p.connectedRouter != null) {
+          final router = p.connectedRouter!;
+
+          for (final rPort in router.ports) {
+            if (rPort.connectedSwitch == start.connectedSwitch) {
+              otherIp = rPort.ipAddress;
+              otherMask = rPort.subnetMask;
+              break;
+            }
+          }
+        }
+
+        if (start.ipAddress != null && start.subnetMask != null && otherIp != null && otherMask != null) {
+          if (_sameSubnet(start.ipAddress!, otherIp, start.subnetMask!)) {
+            final res = _traverseNetwork(p, targetIP, visited, ttl, isFirstAttempt: isFirstAttempt);
+            if (res != PingResult.unreachable) return res;
+          }
+        }
+      }
+    }
+  }
+
+
+  /*
+  /*** OLD SWITCH LOGIC ***/
   if (start.connectedSwitch != null) {
     for (final p in start.connectedSwitch!.ports) {
       if (p.isUp && p != start) {
@@ -257,6 +295,7 @@ PingResult _traverseNetwork(EthernetPort start, String targetIP, Set<EthernetPor
       }
     }
   }
+  */
 
   return PingResult.unreachable;
 }

@@ -16,13 +16,18 @@ class EthernetPort {
   String? subnetMask;
   String? gateway;  
 
+  /* VLAN config */
+  int vlanId;
+  bool isTrunk; 
+  Set<int> allowedVlans = {}; 
+
   PCDevice? connectedPC;
   RouterDevice? connectedRouter;
   SwitchDevice? connectedSwitch;
 
   /* creates a unique id for each port */
   static final Uuid _uuid = Uuid();
-  EthernetPort({String? id, required this.name}) : id = id ?? _uuid.v4();
+  EthernetPort({String? id, this.vlanId = 1, this.isTrunk = false, required this.name}) : id = id ?? _uuid.v4();
 
   /* FUNCTION that configures ip, subnet, gateway, and activeness of port */
   void assignIP(String ip, String mask, {String? gw}) {
@@ -64,6 +69,9 @@ class EthernetPort {
       'subnetMask': subnetMask,
       'gateway': gateway,
       'name': name,
+      'vlanId': vlanId,
+      'isTrunk': isTrunk,
+      'allowedVlans': allowedVlans.toList(),
     };
   }
 
@@ -72,12 +80,20 @@ class EthernetPort {
     final port = EthernetPort(
       id: map['id'],
       name: map['name'] ?? 'EthernetPort',
+      vlanId: map['vlanId'] ?? 1,
+      isTrunk: map['isTrunk'] ?? false,
     );
+    
     port.isFree = map['isFree'] ?? true;
     port.isUp = map['isUp'] ?? false;
     port.ipAddress = map['ipAddress'];
     port.subnetMask = map['subnetMask'];
     port.gateway = map['gateway'];
+
+    if (map['allowedVlans'] != null) {
+      port.allowedVlans = Set<int>.from(map['allowedVlans']);
+    }
+
     return port;
   }
 
@@ -87,7 +103,32 @@ class EthernetPort {
     ipAddress = map['ipAddress'];
     subnetMask = map['subnetMask'];
     gateway = map['gateway'];
+
+    vlanId = map['vlanId'] ?? 1;
+    isTrunk = map['isTrunk'] ?? false;
+    
+    if (map['allowedVlans'] != null) {
+      allowedVlans = Set<int>.from(map['allowedVlans']);
+    } else {
+      allowedVlans.clear();
+    }
   }
+
+  void setAccessVlan(int vlan) {
+    isTrunk = false;
+    vlanId = vlan;
+    allowedVlans.clear();
+  }
+
+  void setTrunkVlans(Set<int> vlans) {
+    isTrunk = true;
+    allowedVlans = vlans;
+  }
+
+  bool allowsVlan(int vlan) {
+    return isTrunk ? allowedVlans.contains(vlan) : vlanId == vlan;
+  }
+
 }
 
 
