@@ -15,15 +15,15 @@ class _LogInState extends State<LogInPage> {
   final firestoreUsers = FirestoreUsers();
 
   /* handles the text field for email and password */
-  final TextEditingController emailController = TextEditingController(text: 'lbj@gmail.com');
-  final TextEditingController passwordController = TextEditingController(text: '123');
+  final TextEditingController emailController = TextEditingController(text: '');
+  final TextEditingController passwordController = TextEditingController(text: '');
 
   String? errorMessage; 
 
 
   /* FUNCTION that checks if email and password matches any record in database */
   void _handleLogin() async {
-    final email = emailController.text.trim();
+    final email = emailController.text.trim().toLowerCase();
     final password = passwordController.text.trim();
 
     setState(() {

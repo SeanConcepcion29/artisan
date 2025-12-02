@@ -48,9 +48,27 @@ class SwitchConsole {
         orElse: () => throw Exception("Port not found"),
       );
 
-      port.vlanId = vlanId;
-      return "Port $portName assigned to VLAN $vlanId";
+      port.setAccessVlan(vlanId);
+      
+      if (port.connectedPC != null) {
+        port.connectedPC!.port.vlanId = vlanId; 
+      }
+
+
+      if (port.connectedRouter != null) {
+        final router = port.connectedRouter!;
+
+        for (final rPort in router.ports) {
+          if (rPort.connectedSwitch == sw) {
+            rPort.vlanId = vlanId;
+            break;
+          }
+        }
+      }
+
+      return "Port $portName assigned to VLAN $vlanId (access)";
     }
+
 
 
     else if (cmd == "clear") {

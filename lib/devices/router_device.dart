@@ -157,6 +157,8 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
   late TextEditingController nameController;
   late TextEditingController _consoleController;
 
+  final ScrollController _scrollController = ScrollController();
+
   /* determines if user selects one of the menu buttons */
   bool showConfig = false;
   bool showConsole = false;
@@ -181,7 +183,20 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
   void dispose() {
     nameController.dispose();
     _consoleController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: Duration(milliseconds: 500),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   @override
@@ -277,6 +292,9 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
 
   /* WIDGET for building the command-line interface */
   Widget _buildConsoleUI() {
+    
+    _scrollToBottom();
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -289,6 +307,7 @@ class _RouterConfigDialogState extends State<RouterConfigDialog> {
             borderRadius: BorderRadius.circular(6),
           ),
           child: ListView(
+            controller: _scrollController,
             children: widget.router.consoleHistory.map((line) {
               return Text(
                 line,

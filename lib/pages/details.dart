@@ -72,6 +72,37 @@ class DetailsPage extends StatelessWidget {
       "desc": "The Add Note Tool lets you place custom notes directly on your project canvas. \n\nNotes are useful for labeling devices, describing network segments, or leaving reminders for yourself or others when sharing your topology.",
       "image": 'assets/detail_images/add_note.png'
     },
+
+    {
+      "title": "PC Commands",
+      "desc": "clear → Clear console\n\n ping <targetIP> → Test connectivity",
+      "image": 'assets/detail_images/pc.png'
+    },
+    {
+      "title": "Switch Commands",
+      "desc": "show mac → Display MAC table of connected devices\n\n show vlan → Display VLAN assignments\n\n set vlan <port> <id> → Assign VLAN to a port\n\n clear → Clear console\n\n help → Show available commands",
+      "image": 'assets/detail_images/switch.png'
+    },
+    {
+      "title": "Router Commands (User Mode)",
+      "desc": "enable → Enter Privileged Mode\n\n clear → Clear console",
+      "image": 'assets/detail_images/router.png'
+    },
+    {
+      "title": "Router Commands (Privileged Mode)",
+      "desc": "configure terminal → Enter Global Config Mode\n\n show ip → Display interface IPs\n\n show ip route → Display routing table\n\n show connections → Show connections on all ports\n\n copy running-config startup-config → Save configuration\n\n disable → Return to User Mode",
+      "image": 'assets/detail_images/router.png'
+    },
+    {
+      "title": "Router Commands (Global Mode)",
+      "desc": "interface <name> → Enter Interface Config Mode\n\n ip route <dest> <mask> <gateway> → Add static route\n\n exit → Return to Privileged Mode",
+      "image": 'assets/detail_images/router.png'
+    },
+    {
+      "title": "Router Commands (Interface Mode)",
+      "desc": "ip address <ip> <subnet> → Assign IP to interface\n\n no shutdown → Enable interface\n\n exit → Return to Global Config Mode",
+      "image": 'assets/detail_images/router.png'
+    },
   ];
 
 
@@ -142,30 +173,30 @@ class DetailsPage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                         child: Image.asset(
                           item["image"]!,
-                          height: MediaQuery.of(context).size.height * 0.2, 
+                          height: MediaQuery.of(context).size.height * 0.15, 
                           width: double.infinity,
                           fit: BoxFit.cover,
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
 
                       /*** TITLE AND DESCRIPTION ***/
                       Text(
                         item["title"]!,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
                       ),
 
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 22),
+                        padding: const EdgeInsets.symmetric(vertical: 18),
                         child: Container(height: 2, width: 300, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10))),
                       ),
 
                       Text(
                         item["desc"]!,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white70, fontSize: 16),
+                        style: const TextStyle(color: Colors.white70, fontSize: 14),
                       ),
                     ],
                   ),

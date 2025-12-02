@@ -518,7 +518,7 @@ class _ProjectWorkspacePageState extends State<ProjectWorkspacePage> {
               curve: Curves.easeInOut,
               color: const Color(0xFF1E1F2A),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              height: _isExpanded ? 260 : 60,
+              height: _isExpanded ? 260 : 65,
               child: SingleChildScrollView(
                 child: Column(
                   children: [

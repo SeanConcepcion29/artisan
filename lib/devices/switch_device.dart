@@ -94,6 +94,8 @@ class _SwitchConfigDialogState extends State<SwitchConfigDialog> {
   late TextEditingController nameController;
   late TextEditingController _consoleController;
 
+  final ScrollController _scrollController = ScrollController();
+
   /* determines if user selects one of the menu buttons */
   bool showConfig = false;
   bool showConsole = false;
@@ -116,7 +118,20 @@ class _SwitchConfigDialogState extends State<SwitchConfigDialog> {
   void dispose() {
     nameController.dispose();
     _consoleController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: Duration(milliseconds: 500),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
 
@@ -205,6 +220,9 @@ class _SwitchConfigDialogState extends State<SwitchConfigDialog> {
 
   /* WIDGET for building the command-line interface */
   Widget _buildConsoleUI() {
+
+    _scrollToBottom();
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,6 +235,7 @@ class _SwitchConfigDialogState extends State<SwitchConfigDialog> {
             borderRadius: BorderRadius.circular(6),
           ),
           child: ListView(
+            controller: _scrollController,
             children: widget.sw.consoleHistory.map((line) {
               return Text(
                 line,

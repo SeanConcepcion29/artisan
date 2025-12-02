@@ -155,7 +155,7 @@ PingResult _traverseNetwork(EthernetPort start, String targetIP, Set<EthernetPor
   visited.add(start);
 
   if (kDebugMode && isFirstAttempt) {
-    final visitedStr = visited.map((p) => "${p.name}(${p.ipAddress ?? 'no-ip'})").join(" -> ");
+    final visitedStr = visited.map((p) => "${p.name}(${p.ipAddress ?? 'no-ip'})[${p.vlanId}]").join(" -> ");
     if (kDebugMode) { print("\nVISITED: $visitedStr"); }
     if (kDebugMode) { print("${start.id} - ${start.ipAddress}"); }
   }
@@ -226,76 +226,16 @@ PingResult _traverseNetwork(EthernetPort start, String targetIP, Set<EthernetPor
   
   /*** SWITCH CONNECTED ***/
   if (start.connectedSwitch != null) {
-    for (final p in start.connectedSwitch!.ports) {
-      if (p.isUp && p != start) {
+    final sw = start.connectedSwitch!;
 
-        /* checks for VLAN match */
-        if (p.vlanId != start.vlanId) continue;
+    for (final port in sw.ports) {
+      if (port == start || !port.isUp) continue;
+      if (!port.allowsVlan(start.vlanId)) continue;
 
-        String? otherIp;
-        String? otherMask;
-
-        if (p.connectedPC != null && p.connectedPC?.port.ipAddress == targetIP) {
-          return PingResult.reachable;
-        }
-
-        else if (p.connectedRouter != null) {
-          final router = p.connectedRouter!;
-
-          for (final rPort in router.ports) {
-            if (rPort.connectedSwitch == start.connectedSwitch) {
-              otherIp = rPort.ipAddress;
-              otherMask = rPort.subnetMask;
-              break;
-            }
-          }
-        }
-
-        if (start.ipAddress != null && start.subnetMask != null && otherIp != null && otherMask != null) {
-          if (_sameSubnet(start.ipAddress!, otherIp, start.subnetMask!)) {
-            final res = _traverseNetwork(p, targetIP, visited, ttl, isFirstAttempt: isFirstAttempt);
-            if (res != PingResult.unreachable) return res;
-          }
-        }
-      }
+      final res = _traverseNetwork(port, targetIP, visited, ttl - 1, isFirstAttempt: isFirstAttempt);
+      if (res != PingResult.unreachable) return res;
     }
   }
-
-
-  /*
-  /*** OLD SWITCH LOGIC ***/
-  if (start.connectedSwitch != null) {
-    for (final p in start.connectedSwitch!.ports) {
-      if (p.isUp && p != start) {
-        String? otherIp;
-        String? otherMask;
-
-        if (p.connectedPC != null && p.connectedPC?.port.ipAddress == targetIP) {
-          return PingResult.reachable;
-        }
-        
-        else if (p.connectedRouter != null) {
-          final router = p.connectedRouter!;
-
-          for (final rPort in router.ports) {
-            if (rPort.connectedSwitch == start.connectedSwitch) {
-              otherIp = rPort.ipAddress;
-              otherMask = rPort.subnetMask;
-              break;
-            }
-          }
-        }
-
-        if (start.ipAddress != null && start.subnetMask != null && otherIp != null && otherMask != null) {
-          if (_sameSubnet(start.ipAddress!, otherIp, start.subnetMask!)) {
-            final res = _traverseNetwork(p,targetIP, visited, ttl, isFirstAttempt: isFirstAttempt);
-            if (res != PingResult.unreachable) return res;
-          }
-        }
-      }
-    }
-  }
-  */
 
   return PingResult.unreachable;
 }

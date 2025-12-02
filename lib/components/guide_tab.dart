@@ -9,7 +9,7 @@ class GuidePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1F2A), // Dark background
+      backgroundColor: const Color(0xFF1E1F2A), 
       body: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
         child: ListView(
@@ -41,6 +41,16 @@ class GuidePage extends StatelessWidget {
               { "index": 9, "title": "Inspect Tool" },
               { "index": 10, "title": "Delete Tool" },
               { "index": 11, "title": "Add Note Tool" }
+            ]),
+
+            /*** CISCO IOS COMMANDS ***/
+            _buildSection(context, "Cisco IOS Commands", [
+              { "index": 12, "title": "PC Commands" },
+              { "index": 13, "title": "Switch Commands" },
+              { "index": 14, "title": "Router Commands (User Mode)" },
+              { "index": 15, "title": "Router Commands (Privileged Mode)" },
+              { "index": 16, "title": "Router Commands (Global Mode)" },
+              { "index": 17, "title": "Router Commands (Interface Mode)" },
             ]),
 
           ],

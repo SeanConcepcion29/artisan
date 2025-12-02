@@ -92,6 +92,8 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
   late TextEditingController gatewayController;
   late TextEditingController _consoleController;
 
+  final ScrollController _scrollController = ScrollController();
+
   /* determines if user selects one of the menu buttons */
   bool showConfig = false;
   bool showPing = false;
@@ -123,7 +125,21 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
     maskController.dispose();
     gatewayController.dispose();
     _consoleController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: Duration(milliseconds: 500),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
 
@@ -229,6 +245,8 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
 
   /* WIDGET for building the command-line interface for performing ping */
   Widget _buildPingUI() {
+    _scrollToBottom();
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,6 +259,7 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
             borderRadius: BorderRadius.circular(6),
           ),
           child: ListView(
+            controller: _scrollController,
             children: widget.pc.consoleHistory
                 .where((line) =>
                     line.contains("ping") ||
@@ -404,6 +423,9 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
 
   /* WIDGET for building the command-line interface */
   Widget _buildConsoleUI() {
+    
+    _scrollToBottom();
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,6 +438,7 @@ class _PCConfigDialogState extends State<PCConfigDialog> {
             borderRadius: BorderRadius.circular(6),
           ),
           child: ListView(
+            controller: _scrollController,
             children: widget.pc.consoleHistory.map((line) {
               return Text(
                 line,

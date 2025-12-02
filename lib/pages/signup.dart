@@ -13,10 +13,12 @@ class _SignUpPageState extends State<SignUpPage> {
   final firestoreUsers = FirestoreUsers();
 
   /* handles the text field for email, password, and name */
-  final TextEditingController firstNameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
-  final TextEditingController lastNameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
+  final TextEditingController firstNameController = TextEditingController();
+  final TextEditingController lastNameController = TextEditingController();
+
 
   String? errorMessage;
   bool isLoading = false;
@@ -24,13 +26,19 @@ class _SignUpPageState extends State<SignUpPage> {
 
   /* FUNCTION that signs up the user */
   Future<void> signUp() async {
-    final email = emailController.text.trim();
+    final email = emailController.text.trim().toLowerCase();
     final password = passwordController.text.trim();
+    final confirmPassword = confirmPasswordController.text.trim();
     final firstName = firstNameController.text.trim();
     final lastName = lastNameController.text.trim();
 
-    if (email.isEmpty || password.isEmpty || firstName.isEmpty || lastName.isEmpty) {
+    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty || firstName.isEmpty || lastName.isEmpty) {
       setState(() => errorMessage = "Please fill all fields");
+      return;
+    }
+
+    if (password != confirmPassword) {
+      setState(() => errorMessage = "Password mismatch");
       return;
     }
 
@@ -135,6 +143,22 @@ class _SignUpPageState extends State<SignUpPage> {
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
                 hintText: "Password",
+                hintStyle: TextStyle(color: Colors.white70),
+                prefixIcon: Icon(Icons.lock_outline, color: Colors.white70),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
+                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+
+            /*** CONFIRM PASSWORD TEXT FIELD ***/
+            TextField(
+              controller: confirmPasswordController,
+              obscureText: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                hintText: "Confirm Password",
                 hintStyle: TextStyle(color: Colors.white70),
                 prefixIcon: Icon(Icons.lock_outline, color: Colors.white70),
                 enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white70)),
