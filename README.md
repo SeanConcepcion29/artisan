@@ -4,4 +4,4 @@ ARTISAN is a mobile network simulator designed to address the limited accessibil
 
 Link to APK: https://drive.google.com/file/d/14HNgaoX0skml01rWTQLjilhAX4MrlFYw/view?usp=sharing
 
-Link to App Guide: https://docs.google.com/document/d/1iKAA6fMHNraIGq_Rm6LJWze7gmowOK8Tw5L6buAcM3c/edit?tab=t.0
+Link to App Guide: https://docs.google.com/document/d/1iKAA6fMHNraIGq_Rm6LJWze7gmowOK8Tw5L6buAcM3c/edit?usp=sharing
