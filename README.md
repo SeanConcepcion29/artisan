@@ -1,16 +1,6 @@
-# artisan
+# ARTISAN: Accessible Routing and Topology Interactive Simulation for Applied Networking
 
-A new Flutter project.
+ARTISAN is a mobile network simulator designed to address the limited accessibility of desktop only tools such as Cisco Packet Tracer and GNS3, particularly in Philippine learning environments with scarce computer resources. Built with Flutter and Firebase, ARTISAN enables users to create and simulate basic network topologies through drag-and-drop interaction, collaborate in shared workspaces, and access a public project gallery. Usability was assessed using the System Usability Scale (SUS) with ten respondents, yielding an average score of 70.5 (“Good”). Results show that the app is intuitive for users with basic networking knowledge, though beginners may require additional instructional support. ARTISAN demonstrates capability as a mobile alternative for computer networking education.
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Link to APK: https://drive.google.com/file/d/14HNgaoX0skml01rWTQLjilhAX4MrlFYw/view?usp=sharing
+Link to App Guide: https://docs.google.com/document/d/1iKAA6fMHNraIGq_Rm6LJWze7gmowOK8Tw5L6buAcM3c/edit?tab=t.0
